@@ -1,0 +1,120 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========== 輔助函數 ==========
+    
+    // 使用者必須登入
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // 取得當前使用者資料
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // 檢查是否為管理員
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+    
+    // 檢查是否為照顧者或管理員
+    function isCaregiverOrAdmin() {
+      return isAuthenticated() && getUserData().role in ['caregiver', 'admin'];
+    }
+    
+    // 檢查是否為家屬
+    function isFamily() {
+      return isAuthenticated() && getUserData().role == 'family';
+    }
+    
+    // 檢查是否為該個案的家屬
+    function isClientFamily(clientId) {
+      return isAuthenticated() && 
+             request.auth.uid in get(/databases/$(database)/documents/clients/$(clientId)).data.familyIds;
+    }
+    
+    // ========== 集合規則 ==========
+    
+    // 使用者集合
+    match /users/{userId} {
+      // 所有登入者可讀取使用者列表（用於顯示名稱）
+      allow read: if isAuthenticated();
+      // 只有管理員可以建立、更新、刪除使用者
+      allow create, update, delete: if isAdmin();
+      // 使用者可以更新自己的資料（除了 role）
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == userId && 
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+    
+        // 班級集合
+    match /classes/{classId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 照顧者和管理員可以 CRUD 班級
+      allow create, update, delete: if isCaregiverOrAdmin();
+    }
+    
+    // 個案集合
+    match /clients/{clientId} {
+      // 照顧者和管理員可讀取所有個案
+      allow read: if isCaregiverOrAdmin();
+      // 家屬只能讀取自己的家人
+      allow read: if isClientFamily(clientId);
+      // 照顧者和管理員可以新增、更新、刪除個案
+      allow create, update, delete: if isCaregiverOrAdmin();
+    }
+    
+    // 照護紀錄集合
+    match /records/{recordId} {
+      // 照顧者和管理員可讀取所有紀錄
+      allow read: if isCaregiverOrAdmin();
+      // 家屬只能讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+      
+      // 照顧者和管理員可以完整 CRUD 所有紀錄
+      allow create, update, delete: if isCaregiverOrAdmin();
+    }
+    
+    // 每月生命徵象紀錄集合
+    match /monthlyVitalSigns/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+      
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+    
+    // 身高體重歷史紀錄集合
+    match /physicalRecords/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+      
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+    
+    // 通知集合
+    match /notifications/{notificationId} {
+      // 只能讀取自己的通知
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // 系統可以建立通知（透過 Cloud Functions）
+      allow create: if isAuthenticated();
+      // 可以更新自己的通知（標記為已讀）
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // 可以刪除自己的通知
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

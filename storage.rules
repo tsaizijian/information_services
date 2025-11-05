@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // 輔助函數
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    function isCaregiverOrAdmin() {
+      return isAuthenticated() && getUserRole() in ['caregiver', 'admin'];
+    }
+    
+    // 照護紀錄附件
+    match /records/{recordId}/{filename} {
+      // 照顧者和管理員可以讀取和上傳
+      allow read: if isCaregiverOrAdmin();
+      allow write: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+    
+    // 個案照片
+    match /clients/{clientId}/{filename} {
+      // 照顧者和管理員可以讀取和上傳
+      allow read: if isCaregiverOrAdmin();
+      allow write: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+    
+    // 使用者頭像
+    match /users/{userId}/{filename} {
+      // 所有人可以讀取
+      allow read: if isAuthenticated();
+      // 只能上傳自己的頭像或管理員可以上傳任何人的
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+  }
+}
