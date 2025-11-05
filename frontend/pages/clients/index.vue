@@ -544,6 +544,8 @@ const {
   createClient,
   updateClient: updateClientData,
 } = useClients();
+const { getClasses } = useClasses();
+const route = useRoute();
 
 // 狀態
 const loading = ref(false);
@@ -585,16 +587,26 @@ const genderOptions = [
 
 const bloodTypeOptions = ["A", "B", "O", "AB"];
 
-const classOptions = ref([
-  { label: "甲班", value: "class1" },
-  { label: "乙班", value: "class2" },
-]);
+const classOptions = ref<{ label: string; value: string }[]>([]);
 
 // 計算屬性
 const isAdmin = computed(() => userProfile.value?.role === "admin");
 
+// 取得班級名稱
+const getClassName = (classId: string) => {
+  if (!classId) return "未分配";
+  const classItem = classOptions.value.find((c) => c.value === classId);
+  return classItem?.label || "未分配";
+};
+
 const filteredClients = computed(() => {
   let result = clients.value || [];
+
+  // 為每個個案添加班級名稱
+  result = result.map((client: any) => ({
+    ...client,
+    className: getClassName(client.classId),
+  }));
 
   if (searchQuery.value) {
     result = result.filter(
@@ -619,15 +631,44 @@ const filteredClients = computed(() => {
   return result;
 });
 
+const openEditFromQuery = async () => {
+  if (typeof window === "undefined") return;
+  const editParam = route.query.edit;
+  if (!editParam || Array.isArray(editParam)) return;
+
+  const target = clients.value.find((client: any) => client.id === editParam);
+  if (!target) return;
+
+  editClient(target);
+
+  const { edit, ...rest } = route.query;
+  await navigateTo(
+    {
+      path: route.path,
+      query: rest,
+    },
+    { replace: true }
+  );
+};
+
 // 監聽新增對話框
-watch(showNewClientDialog, (value) => {
+watch(showNewClientDialog, async (value) => {
   if (value) {
     editingClient.value = null;
     resetForm();
+    await loadClassOptions(); // 重新載入班級選項
     showClientDialog.value = true;
     showNewClientDialog.value = false;
   }
 });
+
+watch(
+  () => [route.query.edit, clients.value],
+  () => {
+    openEditFromQuery();
+  },
+  { immediate: true }
+);
 
 // 方法
 const resetForm = () => {
@@ -650,8 +691,9 @@ const viewClient = (client: any) => {
   navigateTo(`/clients/${client.id}`);
 };
 
-const editClient = (client: any) => {
+const editClient = async (client: any) => {
   editingClient.value = client;
+  await loadClassOptions(); // 重新載入班級選項
   clientForm.value = {
     name: client.name,
     gender: client.gender,
@@ -750,8 +792,21 @@ const deleteClient = async () => {
   }
 };
 
+// 載入班級選項
+const loadClassOptions = async () => {
+  try {
+    const classes = await getClasses();
+    classOptions.value = classes.map((cls: any) => ({
+      label: cls.className,
+      value: cls.id,
+    }));
+  } catch (error) {
+    console.error("載入班級選項失敗:", error);
+  }
+};
+
 // 初始化
-onMounted(() => {
-  fetchClients();
+onMounted(async () => {
+  await Promise.all([fetchClients(), loadClassOptions()]);
 });
 </script>

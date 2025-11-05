@@ -1,7 +1,13 @@
-import { where, Timestamp } from "firebase/firestore";
+import { where, Timestamp, orderBy, limit } from "firebase/firestore";
 
 export const useVitalSigns = () => {
-  const { queryDocuments, addDocument, updateDocument, getDocument } =
+  const {
+    queryDocuments,
+    addDocument,
+    updateDocument,
+    getDocument,
+    deleteDocument,
+  } =
     useFirestore();
   const { userProfile } = useAuth();
 
@@ -134,11 +140,90 @@ export const useVitalSigns = () => {
     );
   };
 
+  // 取得生命徵象記錄列表
+  const getVitalSignRecords = async (filters?: {
+    clientId?: string;
+    startDate?: Date;
+    endDate?: Date;
+    limitCount?: number;
+    order?: "asc" | "desc";
+  }) => {
+    const constraints: any[] = [];
+
+    if (filters?.clientId) {
+      constraints.push(where("clientId", "==", filters.clientId));
+    }
+
+    if (filters?.startDate) {
+      constraints.push(
+        where("measuredAt", ">=", Timestamp.fromDate(filters.startDate))
+      );
+    }
+
+    if (filters?.endDate) {
+      constraints.push(
+        where("measuredAt", "<=", Timestamp.fromDate(filters.endDate))
+      );
+    }
+
+    const sortOrder = filters?.order === "asc" ? "asc" : "desc";
+    constraints.push(orderBy("measuredAt", sortOrder));
+
+    if (filters?.limitCount) {
+      constraints.push(limit(filters.limitCount));
+    }
+
+    return await queryDocuments("vitalSignRecords", ...constraints);
+  };
+
+  // 新增生命徵象記錄
+  const createVitalSignRecord = async (
+    record: {
+      clientId: string;
+      clientName: string;
+      measuredAt: Date;
+      systolic?: number | null;
+      diastolic?: number | null;
+      heartRate?: number | null;
+      temperature?: number | null;
+      bloodOxygen?: number | null;
+      bloodSugar?: number | null;
+      notes?: string | null;
+    },
+    recordedBy?: { id?: string; name?: string }
+  ) => {
+    const data = {
+      clientId: record.clientId,
+      clientName: record.clientName,
+      measuredAt: Timestamp.fromDate(record.measuredAt),
+      systolic: record.systolic ?? null,
+      diastolic: record.diastolic ?? null,
+      heartRate: record.heartRate ?? null,
+      temperature: record.temperature ?? null,
+      bloodOxygen: record.bloodOxygen ?? null,
+      bloodSugar: record.bloodSugar ?? null,
+      notes: record.notes ?? "",
+      recordedBy: recordedBy?.id || userProfile.value?.id || null,
+      recordedByName:
+        recordedBy?.name || userProfile.value?.displayName || "未命名",
+    };
+
+    return await addDocument("vitalSignRecords", data);
+  };
+
+  // 刪除生命徵象記錄
+  const removeVitalSignRecord = async (recordId: string) => {
+    return await deleteDocument("vitalSignRecords", recordId);
+  };
+
   return {
     getYearlyVitalSigns,
     saveMonthlyVitalSign,
     getVitalSignsTrend,
     savePhysicalRecord,
     getPhysicalRecords,
+    getVitalSignRecords,
+    createVitalSignRecord,
+    removeVitalSignRecord,
   };
 };

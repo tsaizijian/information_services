@@ -1,3 +1,5 @@
+import Aura from "@primevue/themes/aura";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -11,7 +13,21 @@ export default defineNuxtConfig({
     "@primevue/nuxt-module",
   ],
 
-  css: ["primeicons/primeicons.css"],
+  primevue: {
+    options: {
+      theme: {
+        preset: Aura,
+        options: {
+          prefix: "p",
+          darkModeSelector: "system",
+          cssLayer: false,
+        },
+      },
+      ripple: true,
+    },
+  },
+
+  css: ["primeicons/primeicons.css", "~/assets/css/main.css"],
 
   runtimeConfig: {
     public: {

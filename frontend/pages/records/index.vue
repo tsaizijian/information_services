@@ -13,7 +13,7 @@
         label="新增紀錄"
         icon="pi pi-plus"
         size="large"
-        @click="showNewRecordDialog = true"
+        @click="openCreateRecord"
         class="shadow-md"
       />
     </div>
@@ -251,7 +251,7 @@
           <Button
             label="新增紀錄"
             icon="pi pi-plus"
-            @click="showNewRecordDialog = true"
+            @click="openCreateRecord"
           />
         </div>
       </template>
@@ -440,9 +440,6 @@
         </div>
       </template>
     </Dialog>
-
-    <!-- Toast 通知 -->
-    <Toast position="top-right" />
   </div>
 </template>
 
@@ -483,7 +480,6 @@ const loading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 const showRecordDialog = ref(false);
-const showNewRecordDialog = ref(false);
 const showDeleteDialog = ref(false);
 const editingRecord = ref<any>(null);
 const deletingRecord = ref<any>(null);
@@ -723,38 +719,38 @@ const deleteRecord = async () => {
   }
 };
 
-// 監聽新增對話框
-watch(showNewRecordDialog, (value) => {
-  if (value) {
-    editingRecord.value = null;
-    resetForm();
-    showRecordDialog.value = true;
-    showNewRecordDialog.value = false;
+const openCreateRecord = () => {
+  editingRecord.value = null;
+  resetForm();
+  showRecordDialog.value = true;
+};
+
+const activeFilters = computed(() => {
+  const filters: Record<string, any> = {};
+
+  if (selectedClient.value) {
+    filters.clientId = selectedClient.value;
   }
+  if (selectedType.value) {
+    filters.category = selectedType.value;
+  }
+  if (startDate.value) {
+    filters.startDate = startDate.value;
+  }
+  if (endDate.value) {
+    filters.endDate = endDate.value;
+  }
+  if (showPinnedOnly.value) {
+    filters.isPinned = true;
+  }
+
+  return filters;
 });
 
 // 載入資料
-const loadRecords = async () => {
+const loadRecords = async (filters: Record<string, any> = activeFilters.value) => {
   loading.value = true;
   try {
-    const filters: any = {};
-
-    if (selectedClient.value) {
-      filters.clientId = selectedClient.value;
-    }
-    if (selectedType.value) {
-      filters.category = selectedType.value;
-    }
-    if (startDate.value) {
-      filters.startDate = startDate.value;
-    }
-    if (endDate.value) {
-      filters.endDate = endDate.value;
-    }
-    if (showPinnedOnly.value) {
-      filters.isPinned = true;
-    }
-
     const data = await getRecords(filters);
     recordsData.value = data;
   } catch (error) {
@@ -772,10 +768,11 @@ const loadRecords = async () => {
 
 // 監聽篩選變化
 watch(
-  [selectedClient, selectedType, startDate, endDate, showPinnedOnly],
-  () => {
-    loadRecords();
-  }
+  activeFilters,
+  (filters) => {
+    loadRecords(filters);
+  },
+  { deep: true }
 );
 
 // 初始化

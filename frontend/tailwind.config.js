@@ -11,5 +11,8 @@ export default {
   theme: {
     extend: {}
   },
-  plugins: []
+  plugins: [],
+  corePlugins: {
+    preflight: true,
+  },
 }

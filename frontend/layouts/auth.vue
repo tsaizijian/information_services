@@ -1,6 +1,7 @@
 <template>
   <div class="min-h-screen">
     <slot />
+    <Toast position="top-right" />
   </div>
 </template>
 

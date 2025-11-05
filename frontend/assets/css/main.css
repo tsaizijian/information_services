@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 確保 PrimeVue 元件有正確的樣式 */
+@layer base {
+  /* 重置可能干擾 PrimeVue 的 Tailwind 樣式 */
+  .p-component {
+    box-sizing: border-box;
+  }
+}

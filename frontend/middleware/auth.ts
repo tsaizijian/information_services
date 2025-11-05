@@ -11,13 +11,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     await initAuth();
   }
 
-  // 如果未登入且不是前往首頁（登入頁），重導向到首頁
-  if (!user.value && to.path !== "/") {
-    return navigateTo("/");
+  // 公開路由（不需要登入）
+  const publicRoutes = ["/", "/login"];
+  const isPublicRoute = publicRoutes.includes(to.path);
+
+  // 如果未登入且不是前往公開路由，重導向到登入頁
+  if (!user.value && !isPublicRoute) {
+    return navigateTo("/login");
   }
 
-  // 如果已登入且前往首頁，重導向到儀表板
-  if (user.value && to.path === "/") {
+  // 如果已登入且前往登入頁，重導向到儀表板
+  if (user.value && to.path === "/login") {
     return navigateTo("/dashboard");
   }
 });

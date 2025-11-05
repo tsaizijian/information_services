@@ -76,56 +76,66 @@
         <slot />
       </main>
     </div>
+    <Toast position="top-right" />
   </div>
 </template>
 
 <script setup lang="ts">
-const { user, userProfile, logout } = useAuth();
+const { userProfile, logout } = useAuth();
 const menu = ref();
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "管理員",
+  caregiver: "照顧者",
+  family: "家屬",
+};
 
 const roleText = computed(() => {
   const role = userProfile.value?.role;
-  return role === "admin" ? "管理員" : role === "caregiver" ? "照顧者" : "家屬";
+  return (role && ROLE_LABELS[role]) || "家屬";
 });
 
-const menuItems = computed(() => {
-  const items = [
-    {
-      label: "儀表板",
-      icon: "pi pi-home",
-      to: "/dashboard",
-    },
-    {
-      label: "個案管理",
-      icon: "pi pi-users",
-      to: "/clients",
-    },
-    {
-      label: "照護紀錄",
-      icon: "pi pi-file-edit",
-      to: "/records",
-    },
-    {
-      label: "生命徵象",
-      icon: "pi pi-heart",
-      to: "/vital-signs",
-    },
-  ];
+const baseMenuItems = [
+  {
+    label: "儀表板",
+    icon: "pi pi-home",
+    to: "/dashboard",
+  },
+  {
+    label: "個案管理",
+    icon: "pi pi-users",
+    to: "/clients",
+  },
+  {
+    label: "照護紀錄",
+    icon: "pi pi-file-edit",
+    to: "/records",
+  },
+  {
+    label: "生命徵象",
+    icon: "pi pi-heart",
+    to: "/vital-signs",
+  },
+];
 
-  // 管理員額外選單
+const adminMenuItems = [
+  {
+    label: "班級管理",
+    icon: "pi pi-sitemap",
+    to: "/classes",
+  },
+  {
+    label: "使用者管理",
+    icon: "pi pi-user-edit",
+    to: "/users",
+  },
+];
+
+const menuItems = computed(() => {
+  const items = [...baseMenuItems];
+
   if (userProfile.value?.role === "admin") {
-    items.push(
-      {
-        label: "班級管理",
-        icon: "pi pi-sitemap",
-        to: "/classes",
-      },
-      {
-        label: "使用者管理",
-        icon: "pi pi-user-edit",
-        to: "/users",
-      }
-    );
+    items.push(...adminMenuItems);
   }
 
   return items;
