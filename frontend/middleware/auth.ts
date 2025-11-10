@@ -12,7 +12,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   // 公開路由（不需要登入）
-  const publicRoutes = ["/", "/login"];
+  const publicRoutes = ["/", "/login", "/register"];
   const isPublicRoute = publicRoutes.includes(to.path);
 
   // 如果未登入且不是前往公開路由，重導向到登入頁
@@ -20,8 +20,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return navigateTo("/login");
   }
 
-  // 如果已登入且前往登入頁，重導向到儀表板
-  if (user.value && to.path === "/login") {
+  // 如果已登入且前往登入或註冊頁，重導向到儀表板
+  if (user.value && (to.path === "/login" || to.path === "/register")) {
     return navigateTo("/dashboard");
   }
 });

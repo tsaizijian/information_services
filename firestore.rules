@@ -42,12 +42,22 @@ service cloud.firestore {
     match /users/{userId} {
       // 所有登入者可讀取使用者列表（用於顯示名稱）
       allow read: if isAuthenticated();
-      // 只有管理員可以建立、更新、刪除使用者
-      allow create, update, delete: if isAdmin();
-      // 使用者可以更新自己的資料（除了 role）
-      allow update: if isAuthenticated() && 
-                       request.auth.uid == userId && 
-                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+      
+      // 建立使用者的規則（管理員或新用戶註冊）
+      // 新用戶註冊時：必須是本人且角色設為 family
+      allow create: if (request.auth != null && 
+                        request.auth.uid == userId &&
+                        request.resource.data.role == 'family') || 
+                       (isAdmin());
+      
+      // 更新使用者的規則
+      allow update: if (isAdmin()) || // 管理員可以更新所有欄位（包括 role）
+                       (isAuthenticated() && 
+                        request.auth.uid == userId && 
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])); // 一般用戶不能改 role
+      
+      // 刪除使用者（只有管理員）
+      allow delete: if isAdmin();
     }
     
         // 班級集合
