@@ -107,7 +107,7 @@
             label="新增照護紀錄"
             icon="pi pi-plus"
             severity="primary"
-            @click="navigateTo('/records/new')"
+            @click="navigateTo('/records?action=new')"
             class="w-full"
           />
           <Button
@@ -288,7 +288,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Timestamp } from "firebase/firestore";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -300,6 +299,7 @@ definePageMeta({
 });
 
 const { userProfile } = useAuth();
+const { toDate, formatDateTime } = useUtils();
 const { getClients } = useClients();
 const { getRecords, getPinnedRecords } = useRecords();
 const { getClasses } = useClasses();
@@ -421,8 +421,8 @@ const loadStats = async () => {
     // 計算本週新增個案
     const weekStart = dayjs().startOf("week").toDate();
     const weeklyClients = clients.filter((client: any) => {
-      const createdAt = client.createdAt?.toDate?.() || new Date(client.createdAt);
-      return dayjs(createdAt).isAfter(weekStart);
+      const createdAt = toDate(client.createdAt);
+      return createdAt ? dayjs(createdAt).isAfter(weekStart) : false;
     });
     stats.value.weeklyNewClients = weeklyClients.length;
 
@@ -509,9 +509,7 @@ const loadDashboardData = async () => {
 
 // 格式化日期
 const formatDate = (date: any) => {
-  if (!date) return "";
-  const d = date?.toDate?.() || new Date(date);
-  return dayjs(d).format("YYYY/MM/DD HH:mm");
+  return formatDateTime(date);
 };
 
 // 取得紀錄類型標籤

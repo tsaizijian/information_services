@@ -1,5 +1,36 @@
 import { where, orderBy } from "firebase/firestore";
 
+// 個案類型定義
+interface Client {
+  id?: string;
+  name: string;
+  gender: "male" | "female";
+  birthDate?: any;
+  classId: string;
+  className?: string;
+  clientNumber?: string;
+  isActive: boolean;
+  basicInfo?: {
+    idNumber?: string;
+    bloodType?: string;
+    emergencyContact?: {
+      name: string;
+      relationship: string;
+      phone: string;
+      phone2?: string;
+    };
+    admissionDate?: any;
+  };
+  latestPhysical?: {
+    height: number | null;
+    weight: number | null;
+    bmi: number | null;
+    measuredDate: any;
+  };
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 export const useClients = () => {
   const {
     queryDocuments,
@@ -23,7 +54,7 @@ export const useClients = () => {
         constraints.unshift(where("classId", "==", classId));
       }
 
-      const result = await queryDocuments("clients", ...constraints);
+      const result = await queryDocuments("clients", ...constraints) as Client[];
       clients.value = result;
       return result;
     } catch (error) {
@@ -42,12 +73,12 @@ export const useClients = () => {
       constraints.unshift(where("classId", "==", classId));
     }
 
-    return await queryDocuments("clients", ...constraints);
+    return await queryDocuments("clients", ...constraints) as Client[];
   };
 
   // 取得單一個案
   const getClient = async (clientId: string) => {
-    return await getDocument("clients", clientId);
+    return await getDocument("clients", clientId) as Client | null;
   };
 
   // 新增個案

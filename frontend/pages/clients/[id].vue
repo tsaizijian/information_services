@@ -266,7 +266,6 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from "dayjs";
 import { Line } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -301,6 +300,7 @@ const clientId = computed(() => route.params.id as string);
 const { getClient } = useClients();
 const { getRecords } = useRecords();
 const { getVitalSignsTrend } = useVitalSigns();
+const { calculateAge, formatDate } = useUtils();
 const toast = useToast();
 
 const pageLoading = ref(true);
@@ -351,37 +351,21 @@ const goEdit = () => {
 
 const emergencyContact = computed(() => client.value?.basicInfo?.emergencyContact || null);
 
-const toDate = (value: any): Date | null => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === "string" || typeof value === "number") {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-  if (typeof value.toDate === "function") {
-    return value.toDate();
-  }
-  return null;
-};
-
 const genderText = computed(() => {
   if (!client.value?.gender) return "未填寫";
   return GENDER_MAP[client.value.gender] || client.value.gender;
 });
 
 const ageText = computed(() => {
-  const birthDate = toDate(client.value?.birthDate);
-  if (!birthDate) return "";
-  const age = dayjs().diff(dayjs(birthDate), "year");
-  return age > 0 ? `${age} 歲` : "";
+  const age = calculateAge(client.value?.birthDate);
+  return age ? `${age} 歲` : "";
 });
 
 const admissionDateText = computed(() => {
   const admissionDate =
-    toDate(client.value?.admissionDate) ||
-    toDate(client.value?.basicInfo?.admissionDate);
-  if (!admissionDate) return "未填寫";
-  return dayjs(admissionDate).format("YYYY/MM/DD");
+    client.value?.admissionDate ||
+    client.value?.basicInfo?.admissionDate;
+  return formatDate(admissionDate) === "-" ? "未填寫" : formatDate(admissionDate);
 });
 
 const latestPhysicalText = computed(() => {
@@ -395,13 +379,15 @@ const latestPhysicalText = computed(() => {
 
 const latestPhysicalMeasuredAt = computed(() => {
   const info = client.value?.latestPhysical;
-  const date = info?.measuredDate ? toDate(info.measuredDate) : null;
-  return date ? `測量日期：${dayjs(date).format("YYYY/MM/DD")}` : "";
+  const date = info?.measuredDate;
+  const formatted = formatDate(date);
+  return formatted !== "-" ? `測量日期：${formatted}` : "";
 });
 
 const formatRecordDate = (value: any) => {
-  const date = toDate(value);
-  return date ? dayjs(date).format("YYYY/MM/DD HH:mm") : "--";
+  const { formatDateTime } = useUtils();
+  const formatted = formatDateTime(value);
+  return formatted !== "-" ? formatted : "--";
 };
 
 const getRecordTypeLabel = (type: string) => {

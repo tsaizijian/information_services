@@ -8,9 +8,21 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
+// 使用者資料類型定義
+interface UserProfile {
+  id?: string;
+  email: string;
+  displayName: string;
+  phone?: string;
+  role: "admin" | "caregiver" | "family";
+  isActive: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 export const useAuth = () => {
   const user = useState<User | null>("user", () => null);
-  const userProfile = useState<any>("userProfile", () => null);
+  const userProfile = useState<UserProfile | null>("userProfile", () => null);
   const loading = useState("authLoading", () => true);
 
   // 延遲獲取 Firebase 實例
@@ -81,7 +93,16 @@ export const useAuth = () => {
       }
 
       user.value = userCredential.user;
-      userProfile.value = { id: userCredential.user.uid, ...userDoc };
+      userProfile.value = {
+        id: userCredential.user.uid,
+        email: userDoc.email,
+        displayName: userDoc.displayName,
+        phone: userDoc.phone,
+        role: userDoc.role as "admin" | "caregiver" | "family",
+        isActive: userDoc.isActive,
+        createdAt: userDoc.createdAt,
+        updatedAt: userDoc.updatedAt,
+      };
 
       return { success: true, user: userCredential.user };
     } catch (error: any) {
@@ -120,7 +141,17 @@ export const useAuth = () => {
         doc(firestore, "users", userCredential.user.uid)
       );
       if (userDoc.exists()) {
-        userProfile.value = { id: userDoc.id, ...userDoc.data() };
+        const data = userDoc.data();
+        userProfile.value = {
+          id: userDoc.id,
+          email: data.email,
+          displayName: data.displayName,
+          phone: data.phone,
+          role: data.role as "admin" | "caregiver" | "family",
+          isActive: data.isActive,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        };
       }
 
       return { success: true, user: userCredential.user };
@@ -168,7 +199,17 @@ export const useAuth = () => {
             doc(firestore, "users", firebaseUser.uid)
           );
           if (userDoc.exists()) {
-            userProfile.value = { id: userDoc.id, ...userDoc.data() };
+            const data = userDoc.data();
+            userProfile.value = {
+              id: userDoc.id,
+              email: data.email,
+              displayName: data.displayName,
+              phone: data.phone,
+              role: data.role as "admin" | "caregiver" | "family",
+              isActive: data.isActive,
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt,
+            };
           }
         } else {
           userProfile.value = null;

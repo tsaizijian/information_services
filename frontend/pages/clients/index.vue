@@ -144,7 +144,7 @@
           </Column>
           <Column field="age" header="年齡" style="min-width: 80px">
             <template #body="{ data }">
-              <span class="text-gray-600">{{ data.age || "-" }} 歲</span>
+              <span class="text-gray-600">{{ calculateAge(data.birthDate) ?? "-" }} 歲</span>
             </template>
           </Column>
           <Column field="className" header="班級" style="min-width: 120px">
@@ -513,12 +513,13 @@
 
 <script setup lang="ts">
 import * as v from "valibot";
-import dayjs from "dayjs";
 
 definePageMeta({
   layout: "default",
   middleware: ["auth"],
 });
+
+const { toDate, calculateAge: calcAge } = useUtils();
 
 // Valibot Schema
 const ClientFormSchema = v.object({
@@ -539,7 +540,6 @@ type ClientFormData = v.InferOutput<typeof ClientFormSchema>;
 const { userProfile } = useAuth();
 const {
   clients,
-  loading: clientsLoading,
   fetchClients,
   createClient,
   updateClient: updateClientData,
@@ -694,10 +694,11 @@ const viewClient = (client: any) => {
 const editClient = async (client: any) => {
   editingClient.value = client;
   await loadClassOptions(); // 重新載入班級選項
+
   clientForm.value = {
     name: client.name,
     gender: client.gender,
-    birthDate: client.birthDate ? new Date(client.birthDate) : null,
+    birthDate: toDate(client.birthDate),
     classId: client.classId,
     clientNumber: client.clientNumber || "",
     bloodType: client.basicInfo?.bloodType || "",
@@ -790,6 +791,11 @@ const deleteClient = async () => {
   } finally {
     deleting.value = false;
   }
+};
+
+// 使用工具函數計算年齡
+const calculateAge = (birthDate: any) => {
+  return calcAge(birthDate);
 };
 
 // 載入班級選項

@@ -1,5 +1,26 @@
 import { where, orderBy, limit, Timestamp } from "firebase/firestore";
 
+// 照護紀錄類型定義
+interface CareRecord {
+  id?: string;
+  clientId: string;
+  clientName: string;
+  classId?: string;
+  recordDate: any;
+  recordType: string;
+  category?: string;
+  content: string;
+  notes?: string;
+  recordedBy: string;
+  recordedByName: string;
+  isPinned: boolean;
+  pinnedBy: string[];
+  handoverConfirmed: boolean;
+  handoverConfirmedAt?: any;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 export const useRecords = () => {
   const {
     queryDocuments,
@@ -52,12 +73,12 @@ export const useRecords = () => {
       constraints.push(limit(filters.limitCount));
     }
 
-    return await queryDocuments("records", ...constraints);
+    return await queryDocuments("records", ...constraints) as CareRecord[];
   };
 
   // 取得單一紀錄
   const getRecord = async (recordId: string) => {
-    return await getDocument("records", recordId);
+    return await getDocument("records", recordId) as CareRecord | null;
   };
 
   // 新增紀錄
@@ -86,16 +107,22 @@ export const useRecords = () => {
   };
 
   // 釘選/取消釘選
-  const togglePin = async (recordId: string, isPinned: boolean) => {
+  const togglePin = async (recordId: string, currentIsPinned: boolean) => {
     const record = await getRecord(recordId);
+    if (!record) {
+      throw new Error("找不到記錄");
+    }
     const pinnedBy = record.pinnedBy || [];
     const userId = userProfile.value?.id;
 
-    if (isPinned && userId && !pinnedBy.includes(userId)) {
-      pinnedBy.push(userId);
-    } else if (!isPinned && userId) {
+    // 如果目前是釘選狀態，則取消釘選（移除用戶）
+    if (currentIsPinned && userId) {
       const index = pinnedBy.indexOf(userId);
       if (index > -1) pinnedBy.splice(index, 1);
+    }
+    // 如果目前未釘選，則釘選（添加用戶）
+    else if (!currentIsPinned && userId && !pinnedBy.includes(userId)) {
+      pinnedBy.push(userId);
     }
 
     return await updateDocument("records", recordId, {

@@ -751,6 +751,7 @@ definePageMeta({
   middleware: ["auth"],
 });
 
+const { toDate: toDateUtil } = useUtils();
 const toast = useToast();
 const { fetchClients, clients } = useClients();
 const { getVitalSignRecords, createVitalSignRecord } = useVitalSigns();
@@ -1079,11 +1080,7 @@ const abnormalMetrics = (record: any) => {
 };
 
 const toDate = (value: any) => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (value?.toDate) return value.toDate();
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return toDateUtil(value);
 };
 
 const normalizeRecord = (record: any) => ({

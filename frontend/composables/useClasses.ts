@@ -1,5 +1,16 @@
 import { orderBy } from "firebase/firestore";
 
+// 班級類型定義
+interface ClassInfo {
+  id?: string;
+  className: string;
+  teachers?: string[];
+  clientCount?: number;
+  description?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 export const useClasses = () => {
   const {
     queryDocuments,
@@ -11,12 +22,12 @@ export const useClasses = () => {
 
   // 取得所有班級
   const getClasses = async () => {
-    return await queryDocuments("classes", orderBy("className"));
+    return await queryDocuments("classes", orderBy("className")) as ClassInfo[];
   };
 
   // 取得單一班級
   const getClass = async (classId: string) => {
-    return await getDocument("classes", classId);
+    return await getDocument("classes", classId) as ClassInfo | null;
   };
 
   // 新增班級
