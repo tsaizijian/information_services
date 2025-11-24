@@ -116,6 +116,16 @@ const baseMenuItems = [
     icon: "pi pi-heart",
     to: "/vital-signs",
   },
+  {
+    label: "醫療照護",
+    icon: "pi pi-heart-fill",
+    to: "/medical-care",
+  },
+  {
+    label: "班務交接",
+    icon: "pi pi-sync",
+    to: "/handover",
+  },
 ];
 
 const adminMenuItems = [
