@@ -1,14 +1,28 @@
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateProfile,
   type User,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+
+// 使用者資料類型定義
+interface UserProfile {
+  id?: string;
+  email: string;
+  displayName: string;
+  phone?: string;
+  role: "admin" | "caregiver" | "family";
+  isActive: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+}
 
 export const useAuth = () => {
   const user = useState<User | null>("user", () => null);
-  const userProfile = useState<any>("userProfile", () => null);
+  const userProfile = useState<UserProfile | null>("userProfile", () => null);
   const loading = useState("authLoading", () => true);
 
   // 延遲獲取 Firebase 實例
@@ -22,6 +36,88 @@ export const useAuth = () => {
     } catch (error) {
       console.warn("Firebase not yet initialized");
       return { auth: null, firestore: null };
+    }
+  };
+
+  // 註冊
+  const register = async (userData: {
+    email: string;
+    password: string;
+    displayName: string;
+    phone?: string;
+  }) => {
+    try {
+      const { auth, firestore } = getFirebaseInstances();
+      if (!auth || !firestore) {
+        return { success: false, error: "Firebase not initialized" };
+      }
+
+      // 建立 Firebase Auth 使用者
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        userData.email,
+        userData.password
+      );
+
+      // 更新 Firebase Auth 的 displayName
+      await updateProfile(userCredential.user, {
+        displayName: userData.displayName,
+      });
+
+      // 建立 Firestore 使用者資料（預設角色為 family）
+      const userDoc = {
+        email: userData.email,
+        displayName: userData.displayName,
+        phone: userData.phone || "",
+        role: "family", // 註冊時統一設定為家屬，之後由管理員調整
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        isActive: true,
+      };
+
+      console.log("Creating Firestore user document:", {
+        uid: userCredential.user.uid,
+        userDoc,
+      });
+
+      try {
+        await setDoc(doc(firestore, "users", userCredential.user.uid), userDoc);
+        console.log("✅ Firestore user document created successfully");
+      } catch (firestoreError: any) {
+        console.error("❌ Firestore setDoc failed:", firestoreError);
+        console.error("Error code:", firestoreError.code);
+        console.error("Error message:", firestoreError.message);
+        throw new Error(
+          `Firestore 寫入失敗: ${firestoreError.message || "權限不足"}`
+        );
+      }
+
+      user.value = userCredential.user;
+      userProfile.value = {
+        id: userCredential.user.uid,
+        email: userDoc.email,
+        displayName: userDoc.displayName,
+        phone: userDoc.phone,
+        role: userDoc.role as "admin" | "caregiver" | "family",
+        isActive: userDoc.isActive,
+        createdAt: userDoc.createdAt,
+        updatedAt: userDoc.updatedAt,
+      };
+
+      return { success: true, user: userCredential.user };
+    } catch (error: any) {
+      console.error("Register error:", error);
+
+      let errorMessage = "註冊失敗，請稍後再試";
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "此電子郵件已被使用";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "電子郵件格式不正確";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "密碼強度不足，至少需要 6 個字元";
+      }
+
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -45,7 +141,17 @@ export const useAuth = () => {
         doc(firestore, "users", userCredential.user.uid)
       );
       if (userDoc.exists()) {
-        userProfile.value = { id: userDoc.id, ...userDoc.data() };
+        const data = userDoc.data();
+        userProfile.value = {
+          id: userDoc.id,
+          email: data.email,
+          displayName: data.displayName,
+          phone: data.phone,
+          role: data.role as "admin" | "caregiver" | "family",
+          isActive: data.isActive,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        };
       }
 
       return { success: true, user: userCredential.user };
@@ -93,7 +199,17 @@ export const useAuth = () => {
             doc(firestore, "users", firebaseUser.uid)
           );
           if (userDoc.exists()) {
-            userProfile.value = { id: userDoc.id, ...userDoc.data() };
+            const data = userDoc.data();
+            userProfile.value = {
+              id: userDoc.id,
+              email: data.email,
+              displayName: data.displayName,
+              phone: data.phone,
+              role: data.role as "admin" | "caregiver" | "family",
+              isActive: data.isActive,
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt,
+            };
           }
         } else {
           userProfile.value = null;
@@ -119,6 +235,7 @@ export const useAuth = () => {
     user,
     userProfile,
     loading,
+    register,
     login,
     logout,
     initAuth,

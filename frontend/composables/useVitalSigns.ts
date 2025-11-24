@@ -1,11 +1,64 @@
 import { where, Timestamp, orderBy, limit } from "firebase/firestore";
 
+// 生命徵象記錄類型定義
+interface MonthlyVitalSign {
+  id?: string;
+  clientId: string;
+  clientName: string;
+  year: number;
+  month: number;
+  weight?: number | null;
+  bloodPressure?: string | null;
+  pulse?: number | null;
+  bloodOxygen?: number | null;
+  measuredBy?: string;
+  measuredByName?: string;
+  measuredDate?: any;
+  notes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+// 生命徵象詳細記錄類型定義
+interface VitalSignRecord {
+  id?: string;
+  clientId: string;
+  clientName?: string;
+  weight?: number | null;
+  bloodPressure?: string | null;
+  systolicBP?: number | null;
+  diastolicBP?: number | null;
+  pulse?: number | null;
+  temperature?: number | null;
+  bloodOxygen?: number | null;
+  bloodSugar?: number | null;
+  measuredAt?: any;
+  measuredBy?: string;
+  recordedByName?: string;
+  notes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+// 身體測量記錄類型定義
+interface PhysicalRecord {
+  id?: string;
+  clientId: string;
+  height?: number | null;
+  weight?: number | null;
+  bmi?: number | null;
+  measuredDate?: any;
+  measuredBy?: string;
+  notes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 export const useVitalSigns = () => {
   const {
     queryDocuments,
     addDocument,
     updateDocument,
-    getDocument,
     deleteDocument,
   } =
     useFirestore();
@@ -17,7 +70,7 @@ export const useVitalSigns = () => {
       "monthlyVitalSigns",
       where("clientId", "==", clientId),
       where("year", "==", year)
-    );
+    ) as MonthlyVitalSign[];
 
     // 建立完整的12個月資料（補空白月份）
     const monthlyData = [];
@@ -60,7 +113,7 @@ export const useVitalSigns = () => {
       where("clientId", "==", data.clientId),
       where("year", "==", data.year),
       where("month", "==", data.month)
-    );
+    ) as MonthlyVitalSign[];
 
     const recordData = {
       clientId: data.clientId,
@@ -82,16 +135,20 @@ export const useVitalSigns = () => {
       return await addDocument("monthlyVitalSigns", recordData);
     } else {
       // 更新
+      const existingId = existing[0]?.id;
+      if (!existingId) {
+        throw new Error("找不到記錄 ID");
+      }
       return await updateDocument(
         "monthlyVitalSigns",
-        existing[0].id,
+        existingId,
         recordData
       );
     }
   };
 
   // 取得個案的生命徵象趨勢資料（用於圖表）
-  const getVitalSignsTrend = async (clientId: string, months: number = 12) => {
+  const getVitalSignsTrend = async (clientId: string) => {
     const currentYear = new Date().getFullYear();
     const data = await getYearlyVitalSigns(clientId, currentYear);
 
@@ -130,14 +187,11 @@ export const useVitalSigns = () => {
   };
 
   // 取得身高體重歷史
-  const getPhysicalRecords = async (
-    clientId: string,
-    limitCount: number = 10
-  ) => {
+  const getPhysicalRecords = async (clientId: string) => {
     return await queryDocuments(
       "physicalRecords",
       where("clientId", "==", clientId)
-    );
+    ) as PhysicalRecord[];
   };
 
   // 取得生命徵象記錄列表
@@ -173,7 +227,7 @@ export const useVitalSigns = () => {
       constraints.push(limit(filters.limitCount));
     }
 
-    return await queryDocuments("vitalSignRecords", ...constraints);
+    return await queryDocuments("vitalSignRecords", ...constraints) as VitalSignRecord[];
   };
 
   // 新增生命徵象記錄

@@ -256,15 +256,27 @@
                 </form>
 
                 <!-- 底部資訊 -->
-                <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+                <div
+                  class="mt-6 pt-6 border-t border-gray-200 text-center space-y-3"
+                >
                   <p class="text-sm text-gray-600">
                     還沒有帳號？
+                    <NuxtLink
+                      to="/register"
+                      class="text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+                    >
+                      立即註冊
+                    </NuxtLink>
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    或
                     <a
                       href="#"
-                      class="text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+                      class="text-gray-600 hover:text-gray-700 hover:underline"
                     >
                       聯絡管理員
                     </a>
+                    協助您開通帳號
                   </p>
                 </div>
               </div>

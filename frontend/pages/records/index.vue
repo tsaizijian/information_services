@@ -196,9 +196,9 @@
               </div>
             </template>
           </Column>
-          <Column field="caregiver" header="照顧者" style="min-width: 100px">
+          <Column field="recordedByName" header="記錄者" style="min-width: 100px">
             <template #body="{ data }">
-              <span class="text-gray-600">{{ data.caregiverName }}</span>
+              <span class="text-gray-600">{{ data.recordedByName || "-" }}</span>
             </template>
           </Column>
           <Column header="操作" style="min-width: 150px">
@@ -393,6 +393,118 @@
       </template>
     </Dialog>
 
+    <!-- 查看詳情對話框 -->
+    <Dialog
+      v-model:visible="showViewDialog"
+      header="照護紀錄詳情"
+      :modal="true"
+      :style="{ width: '700px' }"
+      :draggable="false"
+    >
+      <template v-if="viewingRecord">
+        <div class="space-y-4">
+          <!-- 基本資訊 -->
+          <div class="grid grid-cols-2 gap-4 pb-4 border-b">
+            <div>
+              <label class="text-sm text-gray-600">個案姓名</label>
+              <p class="text-lg font-semibold text-gray-800 mt-1">
+                {{ viewingRecord.clientName }}
+              </p>
+            </div>
+            <div>
+              <label class="text-sm text-gray-600">記錄日期</label>
+              <p class="text-lg font-semibold text-gray-800 mt-1">
+                {{ formatDate(viewingRecord.recordDate) }}
+              </p>
+            </div>
+            <div>
+              <label class="text-sm text-gray-600">記錄類型</label>
+              <div class="mt-1">
+                <Tag
+                  :value="getTypeLabel(viewingRecord.recordType)"
+                  :severity="getTypeSeverity(viewingRecord.recordType)"
+                  rounded
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm text-gray-600">記錄者</label>
+              <p class="text-lg font-semibold text-gray-800 mt-1">
+                {{ viewingRecord.recordedByName || "-" }}
+              </p>
+            </div>
+          </div>
+
+          <!-- 記錄內容 -->
+          <div>
+            <label class="text-sm text-gray-600 flex items-center gap-2 mb-2">
+              <i class="pi pi-file-edit text-primary"></i>
+              照護內容
+            </label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap">
+                {{ viewingRecord.content }}
+              </p>
+            </div>
+          </div>
+
+          <!-- 備註 -->
+          <div v-if="viewingRecord.notes">
+            <label class="text-sm text-gray-600 flex items-center gap-2 mb-2">
+              <i class="pi pi-comment text-primary"></i>
+              備註說明
+            </label>
+            <div class="bg-blue-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap">
+                {{ viewingRecord.notes }}
+              </p>
+            </div>
+          </div>
+
+          <!-- 狀態標籤 -->
+          <div class="flex items-center gap-3 pt-4 border-t">
+            <Tag
+              v-if="viewingRecord.isPinned"
+              value="已釘選"
+              severity="warning"
+              icon="pi pi-thumbtack"
+            />
+            <Tag
+              v-if="viewingRecord.handoverConfirmed"
+              value="已確認交接"
+              severity="success"
+              icon="pi pi-check"
+            />
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-between items-center">
+          <Button
+            label="查看個案"
+            icon="pi pi-user"
+            text
+            @click="goToClient(viewingRecord)"
+          />
+          <div class="flex gap-3">
+            <Button
+              label="關閉"
+              severity="secondary"
+              outlined
+              @click="showViewDialog = false"
+              icon="pi pi-times"
+            />
+            <Button
+              label="編輯"
+              icon="pi pi-pencil"
+              @click="editFromView(viewingRecord)"
+            />
+          </div>
+        </div>
+      </template>
+    </Dialog>
+
     <!-- 刪除確認對話框 -->
     <Dialog
       v-model:visible="showDeleteDialog"
@@ -453,6 +565,8 @@ definePageMeta({
   middleware: ["auth"],
 });
 
+const { toDate, formatDate: formatDateUtil } = useUtils();
+
 // Valibot Schema
 const RecordFormSchema = v.object({
   clientId: v.pipe(v.string(), v.minLength(1, "請選擇個案")),
@@ -481,8 +595,10 @@ const saving = ref(false);
 const deleting = ref(false);
 const showRecordDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showViewDialog = ref(false);
 const editingRecord = ref<any>(null);
 const deletingRecord = ref<any>(null);
+const viewingRecord = ref<any>(null);
 const recordsData = ref<any[]>([]);
 
 // 篩選
@@ -556,7 +672,7 @@ const filteredRecords = computed(() => {
 
 // 方法
 const formatDate = (date: any) => {
-  return dayjs(date).format("YYYY/MM/DD");
+  return formatDateUtil(date);
 };
 
 const getTypeLabel = (type: string) => {
@@ -579,15 +695,20 @@ const getTypeSeverity = (type: string) => {
 
 const togglePin = async (record: any) => {
   try {
-    await toggleRecordPin(record.id, record.isPinned);
-    record.isPinned = !record.isPinned;
+    const currentIsPinned = record.isPinned;
+    await toggleRecordPin(record.id, currentIsPinned);
+
+    // 重新載入記錄以確保狀態同步
+    await loadRecords();
+
     toast.add({
       severity: "success",
-      summary: record.isPinned ? "已釘選" : "已取消釘選",
+      summary: currentIsPinned ? "已取消釘選" : "已釘選",
       detail: "紀錄狀態已更新",
       life: 2000,
     });
   } catch (error) {
+    console.error("釘選操作失敗:", error);
     toast.add({
       severity: "error",
       summary: "操作失敗",
@@ -598,15 +719,26 @@ const togglePin = async (record: any) => {
 };
 
 const viewRecord = (record: any) => {
-  // TODO: 實作查看詳情
-  console.log("查看紀錄:", record);
+  viewingRecord.value = record;
+  showViewDialog.value = true;
+};
+
+const goToClient = (record: any) => {
+  if (record?.clientId) {
+    navigateTo(`/clients/${record.clientId}`);
+  }
+};
+
+const editFromView = (record: any) => {
+  showViewDialog.value = false;
+  editRecord(record);
 };
 
 const editRecord = (record: any) => {
   editingRecord.value = record;
   recordForm.value = {
     clientId: record.clientId,
-    recordDate: new Date(record.recordDate),
+    recordDate: toDate(record.recordDate) || new Date(),
     recordType: record.recordType,
     content: record.content,
     notes: record.notes || "",
@@ -779,6 +911,15 @@ watch(
 onMounted(async () => {
   await fetchClients();
   await loadRecords();
+
+  // 檢查 URL 查詢參數，如果有 action=new 則自動打開新增對話框
+  const route = useRoute();
+  if (route.query.action === 'new') {
+    openCreateRecord();
+    // 清除查詢參數，避免刷新時重複打開
+    const router = useRouter();
+    router.replace({ query: {} });
+  }
 });
 </script>
 
