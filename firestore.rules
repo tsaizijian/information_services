@@ -128,6 +128,74 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // 班務交接集合
+    match /handovers/{handoverId} {
+      // 照顧者和管理員可讀取所有交接
+      allow read: if isCaregiverOrAdmin();
+
+      // 照顧者和管理員可以新增交接
+      allow create: if isCaregiverOrAdmin();
+
+      // 照顧者和管理員可以更新交接（確認、標記已讀等）
+      allow update: if isCaregiverOrAdmin();
+
+      // 只有管理員或建立者可以刪除
+      allow delete: if isAdmin() ||
+                       (isCaregiverOrAdmin() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // 情緒異常紀錄集合
+    match /emotionRecords/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+
+    // 解便紀錄集合
+    match /bowelRecords/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+
+    // 癲癇發作紀錄集合
+    match /seizureRecords/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+
+    // 生理期紀錄集合
+    match /menstrualRecords/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+
     // 通知集合
     match /notifications/{notificationId} {
       // 只能讀取自己的通知

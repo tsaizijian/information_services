@@ -102,12 +102,19 @@
         </div>
       </template>
       <template #content>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Button
             label="新增照護紀錄"
             icon="pi pi-plus"
             severity="primary"
             @click="navigateTo('/records?action=new')"
+            class="w-full"
+          />
+          <Button
+            label="班務交接"
+            icon="pi pi-sync"
+            severity="warn"
+            @click="navigateTo('/handover')"
             class="w-full"
           />
           <Button
@@ -134,6 +141,59 @@
             @click="handleExport"
             class="w-full"
           />
+        </div>
+      </template>
+    </Card>
+
+    <!-- 待確認交接 -->
+    <Card v-if="pendingHandovers.length > 0" class="border-l-4 border-orange-500">
+      <template #title>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="pi pi-sync text-orange-600 mr-2"></i>
+            待確認交接
+            <Tag :value="pendingHandovers.length + ' 筆'" severity="warn" class="ml-2" rounded />
+          </div>
+          <Button
+            label="查看全部"
+            icon="pi pi-arrow-right"
+            text
+            @click="navigateTo('/handover')"
+          />
+        </div>
+      </template>
+      <template #content>
+        <div v-if="handoversLoading" class="text-center py-4">
+          <i class="pi pi-spinner pi-spin text-2xl text-gray-400"></i>
+        </div>
+        <div v-else class="space-y-3">
+          <div
+            v-for="handover in pendingHandovers"
+            :key="handover.id"
+            class="border border-gray-200 rounded-lg p-4 hover:bg-orange-50 cursor-pointer transition-colors"
+            @click="navigateTo('/handover')"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <Tag
+                    :value="getPriorityMeta(handover.priority).label"
+                    :severity="getPrioritySeverity(handover.priority)"
+                    rounded
+                  />
+                  <Tag :value="getShiftLabel(handover.shiftType)" severity="info" rounded />
+                  <span class="text-sm text-gray-600">
+                    {{ formatHandoverDate(handover.shiftDate) }}
+                  </span>
+                </div>
+                <p class="text-gray-700 line-clamp-2">{{ handover.content }}</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  建立者：{{ handover.createdByName }}
+                </p>
+              </div>
+              <i class="pi pi-clock text-orange-500"></i>
+            </div>
+          </div>
         </div>
       </template>
     </Card>
@@ -303,11 +363,13 @@ const { toDate, formatDateTime } = useUtils();
 const { getClients } = useClients();
 const { getRecords, getPinnedRecords } = useRecords();
 const { getClasses } = useClasses();
+const { getMyPendingHandovers, getShiftLabel, getPriorityMeta } = useHandover();
 
 // 載入狀態
 const statsLoading = ref(true);
 const recordsLoading = ref(true);
 const classStatsLoading = ref(true);
+const handoversLoading = ref(true);
 
 // 資料狀態
 const stats = ref({
@@ -319,6 +381,7 @@ const stats = ref({
 const recentRecords = ref<any[]>([]);
 const pinnedRecords = ref<any[]>([]);
 const classStats = ref<{ className: string; clientCount: number }[]>([]);
+const pendingHandovers = ref<any[]>([]);
 
 // 當前日期時間
 const currentDate = ref("");
@@ -502,9 +565,40 @@ const loadClassStats = async () => {
   }
 };
 
+// 載入待確認交接
+const loadPendingHandovers = async () => {
+  handoversLoading.value = true;
+  try {
+    const handovers = await getMyPendingHandovers();
+    pendingHandovers.value = handovers.slice(0, 5); // 只顯示最新 5 筆
+  } catch (error) {
+    console.error("載入待確認交接失敗:", error);
+  } finally {
+    handoversLoading.value = false;
+  }
+};
+
+// 取得交接重要性樣式
+const getPrioritySeverity = (priority: string) => {
+  const map: Record<string, string> = {
+    urgent: 'danger',
+    high: 'warn',
+    normal: 'success',
+    low: 'secondary',
+  };
+  return map[priority] || 'secondary';
+};
+
+// 格式化交接日期
+const formatHandoverDate = (date: any) => {
+  if (!date) return '-';
+  const d = date.toDate ? date.toDate() : new Date(date);
+  return dayjs(d).format('MM/DD');
+};
+
 // 載入所有儀表板資料
 const loadDashboardData = async () => {
-  await Promise.all([loadStats(), loadRecentRecords(), loadClassStats()]);
+  await Promise.all([loadStats(), loadRecentRecords(), loadClassStats(), loadPendingHandovers()]);
 };
 
 // 格式化日期
