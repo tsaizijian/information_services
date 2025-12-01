@@ -62,7 +62,7 @@ export const useFamilyContacts = () => {
 
         return await addDocument(collectionName, {
             ...data,
-            recordedBy: userProfile.value.uid,
+            recordedBy: userProfile.value.id || "",
             recordedByName: userProfile.value.displayName || "未知使用者",
         });
     };

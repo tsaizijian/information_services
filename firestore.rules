@@ -207,5 +207,18 @@ service cloud.firestore {
       // 可以刪除自己的通知
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
+
+    // 家屬聯絡紀錄集合
+    match /familyContacts/{contactId} {
+      // 照顧者和管理員可讀取所有聯絡紀錄
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的聯絡紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
   }
 }
