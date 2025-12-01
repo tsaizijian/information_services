@@ -126,6 +126,11 @@ const baseMenuItems = [
     icon: "pi pi-sync",
     to: "/handover",
   },
+  {
+    label: "家屬聯絡",
+    icon: "pi pi-phone",
+    to: "/parent-contact",
+  },
 ];
 
 const adminMenuItems = [
