@@ -26,6 +26,10 @@ export interface MenstrualRecord {
   recordedBy: string;
   recordedByName: string;
 
+  // 釘選功能
+  isPinned?: boolean;
+  pinnedBy?: string[];
+
   createdAt?: any;
   updatedAt?: any;
 }
@@ -146,6 +150,8 @@ export const useMenstrualRecords = () => {
       cycleDays,
       recordedBy: userProfile.value?.id || recordData.recordedBy,
       recordedByName: userProfile.value?.displayName || recordData.recordedByName,
+      isPinned: false,
+      pinnedBy: [],
     };
     return await addDocument("menstrualRecords", data);
   };
@@ -174,6 +180,28 @@ export const useMenstrualRecords = () => {
   const getSymptomLabel = (value: string) => MENSTRUAL_SYMPTOM_OPTIONS.find(o => o.value === value)?.label || value;
   const getSpecialConditionLabel = (value: string) => SPECIAL_CONDITION_OPTIONS.find(o => o.value === value)?.label || value;
 
+  // 釘選/取消釘選
+  const togglePin = async (recordId: string, currentIsPinned: boolean) => {
+    const record = await getMenstrualRecord(recordId);
+    if (!record) {
+      throw new Error("找不到記錄");
+    }
+    const pinnedBy = record.pinnedBy || [];
+    const userId = userProfile.value?.id;
+
+    if (currentIsPinned && userId) {
+      const index = pinnedBy.indexOf(userId);
+      if (index > -1) pinnedBy.splice(index, 1);
+    } else if (!currentIsPinned && userId && !pinnedBy.includes(userId)) {
+      pinnedBy.push(userId);
+    }
+
+    return await updateDocument("menstrualRecords", recordId, {
+      isPinned: pinnedBy.length > 0,
+      pinnedBy,
+    });
+  };
+
   return {
     getMenstrualRecords,
     getMenstrualRecord,
@@ -181,6 +209,7 @@ export const useMenstrualRecords = () => {
     createMenstrualRecord,
     updateMenstrualRecord,
     deleteMenstrualRecord,
+    togglePin,
     getFlowAmountLabel,
     getPainLevelLabel,
     getPainLevelSeverity,

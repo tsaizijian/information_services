@@ -10,6 +10,9 @@ export interface FamilyContact {
     content: string; // 內容
     recordedBy: string;
     recordedByName: string;
+    // 釘選功能
+    isPinned?: boolean;
+    pinnedBy?: string[];
     createdAt?: any;
     updatedAt?: any;
 }
@@ -64,6 +67,8 @@ export const useFamilyContacts = () => {
             ...data,
             recordedBy: userProfile.value.id || "",
             recordedByName: userProfile.value.displayName || "未知使用者",
+            isPinned: false,
+            pinnedBy: [],
         });
     };
 
@@ -77,10 +82,40 @@ export const useFamilyContacts = () => {
         return await deleteDocument(collectionName, id);
     };
 
+    // 取得單一聯絡記錄
+    const getContact = async (id: string) => {
+        const { getDocument } = useFirestore();
+        return await getDocument(collectionName, id) as FamilyContact | null;
+    };
+
+    // 釘選/取消釘選
+    const togglePin = async (contactId: string, currentIsPinned: boolean) => {
+        const contact = await getContact(contactId);
+        if (!contact) {
+            throw new Error("找不到聯絡記錄");
+        }
+        const pinnedBy = contact.pinnedBy || [];
+        const userId = userProfile.value?.id;
+
+        if (currentIsPinned && userId) {
+            const index = pinnedBy.indexOf(userId);
+            if (index > -1) pinnedBy.splice(index, 1);
+        } else if (!currentIsPinned && userId && !pinnedBy.includes(userId)) {
+            pinnedBy.push(userId);
+        }
+
+        return await updateDocument(collectionName, contactId, {
+            isPinned: pinnedBy.length > 0,
+            pinnedBy,
+        });
+    };
+
     return {
         getContacts,
+        getContact,
         addContact,
         updateContact,
         deleteContact,
+        togglePin,
     };
 };

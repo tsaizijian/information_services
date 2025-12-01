@@ -33,6 +33,10 @@ export interface EmotionRecord {
   recordedBy: string;
   recordedByName: string;
 
+  // 釘選功能
+  isPinned?: boolean;
+  pinnedBy?: string[];
+
   createdAt?: any;
   updatedAt?: any;
 }
@@ -201,6 +205,8 @@ export const useEmotionRecords = () => {
         : recordData.occurredDate,
       recordedBy: userProfile.value?.id || recordData.recordedBy,
       recordedByName: userProfile.value?.displayName || recordData.recordedByName,
+      isPinned: false,
+      pinnedBy: [],
     };
     return await addDocument("emotionRecords", data);
   };
@@ -240,6 +246,28 @@ export const useEmotionRecords = () => {
     return EMERGENCY_OPTIONS.find((o) => o.value === value)?.label || value;
   };
 
+  // 釘選/取消釘選
+  const togglePin = async (recordId: string, currentIsPinned: boolean) => {
+    const record = await getEmotionRecord(recordId);
+    if (!record) {
+      throw new Error("找不到記錄");
+    }
+    const pinnedBy = record.pinnedBy || [];
+    const userId = userProfile.value?.id;
+
+    if (currentIsPinned && userId) {
+      const index = pinnedBy.indexOf(userId);
+      if (index > -1) pinnedBy.splice(index, 1);
+    } else if (!currentIsPinned && userId && !pinnedBy.includes(userId)) {
+      pinnedBy.push(userId);
+    }
+
+    return await updateDocument("emotionRecords", recordId, {
+      isPinned: pinnedBy.length > 0,
+      pinnedBy,
+    });
+  };
+
   return {
     getEmotionRecords,
     getEmotionRecord,
@@ -247,6 +275,7 @@ export const useEmotionRecords = () => {
     createEmotionRecord,
     updateEmotionRecord,
     deleteEmotionRecord,
+    togglePin,
     getContextLabel,
     getTriggerLabel,
     getSymptomLabel,

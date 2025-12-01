@@ -307,13 +307,29 @@ const resetFilters = () => { filterClientId.value = null; filterStartDate.value 
 const saveRecord = async () => {
   saving.value = true;
   try {
-    const data = { ...form.value, recordedBy: userProfile.value?.id || '', recordedByName: userProfile.value?.displayName || '' };
-    if (editingRecord.value?.id) { await updateSeizureRecord(editingRecord.value.id, data); toast.add({ severity: 'success', summary: '更新成功', life: 3000 }); }
-    else { await createSeizureRecord(data); toast.add({ severity: 'success', summary: '建立成功', life: 3000 }); }
+    // 準備要儲存的資料，排除不該傳遞的欄位
+    const { isPinned, pinnedBy, ...formData } = form.value as any;
+    const data = {
+      ...formData,
+      recordedBy: userProfile.value?.id || '',
+      recordedByName: userProfile.value?.displayName || ''
+    };
+
+    if (editingRecord.value?.id) {
+      await updateSeizureRecord(editingRecord.value.id, data);
+      toast.add({ severity: 'success', summary: '更新成功', life: 3000 });
+    } else {
+      await createSeizureRecord(data);
+      toast.add({ severity: 'success', summary: '建立成功', life: 3000 });
+    }
+
     showFormDialog.value = false;
     await loadRecords();
-  } catch (e) { toast.add({ severity: 'error', summary: '儲存失敗', life: 3000 }); }
-  finally { saving.value = false; }
+  } catch (e) {
+    toast.add({ severity: 'error', summary: '儲存失敗', life: 3000 });
+  } finally {
+    saving.value = false;
+  }
 };
 
 const doDelete = async () => {

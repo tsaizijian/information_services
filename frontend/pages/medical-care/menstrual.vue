@@ -805,6 +805,7 @@ const saveRecord = async () => {
 
   saving.value = true;
   try {
+    // 僅包含業務欄位，不包含 isPinned 和 pinnedBy，以保留釘選狀態
     const data = {
       clientId: form.value.clientId,
       clientName: form.value.clientName,

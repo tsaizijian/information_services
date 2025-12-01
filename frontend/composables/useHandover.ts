@@ -39,6 +39,10 @@ export interface Handover {
   confirmedByName?: string;
   confirmedAt?: any;
 
+  // 釘選功能
+  isPinned?: boolean;
+  pinnedBy?: string[];
+
   createdAt?: any;
   updatedAt?: any;
 }
@@ -143,6 +147,8 @@ export const useHandover = () => {
         ? Timestamp.fromDate(handoverData.shiftDate)
         : handoverData.shiftDate,
       status: "pending" as const,
+      isPinned: false,
+      pinnedBy: [],
     };
     return await addDocument("handovers", data);
   };
@@ -200,6 +206,28 @@ export const useHandover = () => {
     return option || { label: priority, color: "gray", icon: "pi-circle" };
   };
 
+  // 釘選/取消釘選
+  const togglePin = async (handoverId: string, currentIsPinned: boolean) => {
+    const handover = await getHandover(handoverId);
+    if (!handover) {
+      throw new Error("找不到交接記錄");
+    }
+    const pinnedBy = handover.pinnedBy || [];
+    const userId = userProfile.value?.id;
+
+    if (currentIsPinned && userId) {
+      const index = pinnedBy.indexOf(userId);
+      if (index > -1) pinnedBy.splice(index, 1);
+    } else if (!currentIsPinned && userId && !pinnedBy.includes(userId)) {
+      pinnedBy.push(userId);
+    }
+
+    return await updateDocument("handovers", handoverId, {
+      isPinned: pinnedBy.length > 0,
+      pinnedBy,
+    });
+  };
+
   return {
     getHandovers,
     getHandover,
@@ -210,6 +238,7 @@ export const useHandover = () => {
     deleteHandover,
     confirmHandover,
     markAsRead,
+    togglePin,
     getShiftLabel,
     getPriorityMeta,
     SHIFT_OPTIONS,

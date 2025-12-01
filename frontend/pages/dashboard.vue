@@ -220,7 +220,7 @@
             v-for="record in pinnedRecords"
             :key="record.id"
             class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-            @click="viewRecord(record)"
+            @click="viewRecordDetail(record)"
           >
             <div class="flex items-start justify-between gap-3">
               <div class="flex-1">
@@ -246,110 +246,133 @@
       </template>
     </Card>
 
-    <!-- 最近紀錄與班級統計 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- 最近照護紀錄 -->
-      <Card>
-        <template #title>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <i class="pi pi-clock mr-2 text-primary"></i>
-              最近照護紀錄
-            </div>
-            <Button
-              label="查看全部"
-              icon="pi pi-arrow-right"
-              text
-              @click="navigateTo('/records')"
+    <!-- 所有個案記錄 -->
+    <Card>
+      <template #title>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="pi pi-file-edit mr-2 text-primary"></i>
+            所有個案記錄
+          </div>
+        </div>
+      </template>
+      <template #content>
+        <!-- 搜尋和篩選區 -->
+        <div class="mb-6 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <IconField iconPosition="left">
+              <InputIcon class="pi pi-search" />
+              <InputText
+                v-model="searchQuery"
+                placeholder="搜尋個案名稱或內容..."
+                class="w-full"
+              />
+            </IconField>
+            <Select
+              v-model="selectedRecordType"
+              :options="recordTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="所有記錄類型"
+              class="w-full"
+              showClear
+            />
+            <Calendar
+              v-model="searchStartDate"
+              placeholder="開始日期"
+              dateFormat="yy/mm/dd"
+              showIcon
+              class="w-full"
+            />
+            <Calendar
+              v-model="searchEndDate"
+              placeholder="結束日期"
+              dateFormat="yy/mm/dd"
+              showIcon
+              class="w-full"
             />
           </div>
-        </template>
-        <template #content>
-          <div v-if="recordsLoading" class="text-center py-8">
-            <i class="pi pi-spinner pi-spin text-3xl text-gray-400"></i>
+          <div class="flex items-center gap-2">
+            <Checkbox v-model="showPinnedOnly" inputId="pinnedOnly" :binary="true" />
+            <label for="pinnedOnly" class="cursor-pointer">僅顯示釘選記錄</label>
           </div>
-          <div v-else-if="recentRecords.length > 0" class="space-y-3">
-            <div
-              v-for="record in recentRecords"
-              :key="record.id"
-              class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-              @click="viewRecord(record)"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-2">
-                    <Tag
-                      :value="getRecordTypeLabel(record.recordType)"
-                      :severity="getRecordTypeSeverity(record.recordType)"
-                      rounded
-                    />
-                    <span class="text-sm text-gray-600">
-                      {{ record.clientName }}
-                    </span>
-                  </div>
-                  <p class="text-gray-700 line-clamp-2">{{ record.content }}</p>
-                  <div class="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                    <span>
-                      <i class="pi pi-user mr-1"></i>
-                      {{ record.recordedByName }}
-                    </span>
-                    <span>
-                      <i class="pi pi-calendar mr-1"></i>
-                      {{ formatDate(record.recordDate) }}
-                    </span>
-                  </div>
+        </div>
+
+        <!-- 記錄列表 -->
+        <div v-if="allRecordsLoading" class="text-center py-8">
+          <i class="pi pi-spinner pi-spin text-3xl text-gray-400"></i>
+        </div>
+        <div v-else-if="filteredRecords.length > 0" class="space-y-3">
+          <div
+            v-for="record in filteredRecords"
+            :key="record.id"
+            class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <Tag
+                    :value="getRecordTypeLabel(record.type)"
+                    :severity="getRecordTypeSeverity(record.type)"
+                    rounded
+                  />
+                  <span class="text-sm text-gray-600">
+                    {{ record.clientName }}
+                  </span>
+                  <span class="text-xs text-gray-400">
+                    {{ formatDate(record.date) }}
+                  </span>
                 </div>
+                <p class="text-gray-700 line-clamp-2">{{ record.summary }}</p>
+                <div class="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                  <span>
+                    <i class="pi pi-user mr-1"></i>
+                    {{ record.recordedByName }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <Button
+                  :icon="record.isPinned ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+                  :severity="record.isPinned ? 'warn' : 'secondary'"
+                  text
+                  rounded
+                  @click="handleTogglePin(record)"
+                  v-tooltip.left="record.isPinned ? '取消釘選' : '釘選'"
+                />
+                <Button
+                  icon="pi pi-eye"
+                  severity="info"
+                  text
+                  rounded
+                  @click="viewRecordDetail(record)"
+                  v-tooltip.left="'查看詳情'"
+                />
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-8 text-surface-500">
-            <i class="pi pi-inbox text-4xl mb-3 block"></i>
-            <p>目前沒有照護紀錄</p>
-          </div>
-        </template>
-      </Card>
+        </div>
+        <div v-else class="text-center py-8 text-surface-500">
+          <i class="pi pi-inbox text-4xl mb-3 block"></i>
+          <p>目前沒有符合條件的記錄</p>
+        </div>
 
-      <!-- 班級統計圖表 -->
-      <Card>
-        <template #title>
-          <div class="flex items-center">
-            <i class="pi pi-chart-bar mr-2 text-primary"></i>
-            班級個案統計
-          </div>
-        </template>
-        <template #content>
-          <div v-if="classStatsLoading" class="text-center py-8">
-            <i class="pi pi-spinner pi-spin text-3xl text-gray-400"></i>
-          </div>
-          <div v-else-if="hasClassStats" class="h-64">
-            <ClientOnly>
-              <Bar :data="classChartData" :options="classChartOptions" />
-            </ClientOnly>
-          </div>
-          <div v-else class="text-center py-8 text-surface-500">
-            <i class="pi pi-chart-bar text-4xl mb-3 block"></i>
-            <p>暫無班級統計資料</p>
-          </div>
-        </template>
-      </Card>
-    </div>
+        <!-- 分頁 -->
+        <div v-if="filteredRecords.length > 0" class="mt-6 flex justify-center">
+          <Paginator
+            :rows="recordsPerPage"
+            :totalRecords="totalFilteredRecords"
+            @page="onPageChange"
+          />
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import dayjs from "dayjs";
 import "dayjs/locale/zh-tw";
-import { Bar } from "vue-chartjs";
-import {
-  Chart as ChartJS,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 dayjs.locale("zh-tw");
 
@@ -361,14 +384,17 @@ definePageMeta({
 const { userProfile } = useAuth();
 const { toDate, formatDateTime } = useUtils();
 const { getClients } = useClients();
-const { getRecords, getPinnedRecords } = useRecords();
-const { getClasses } = useClasses();
-const { getMyPendingHandovers, getShiftLabel, getPriorityMeta } = useHandover();
+const { getRecords, togglePin: toggleCarePin } = useRecords();
+const { getEmotionRecords, togglePin: toggleEmotionPin } = useEmotionRecords();
+const { getBowelRecords, togglePin: toggleBowelPin } = useBowelRecords();
+const { getSeizureRecords, togglePin: toggleSeizurePin } = useSeizureRecords();
+const { getMenstrualRecords, togglePin: toggleMenstrualPin } = useMenstrualRecords();
+const { getHandovers, getMyPendingHandovers, getShiftLabel, getPriorityMeta, togglePin: toggleHandoverPin } = useHandover();
+const { getContacts, togglePin: toggleFamilyContactPin } = useFamilyContacts();
 
 // 載入狀態
 const statsLoading = ref(true);
-const recordsLoading = ref(true);
-const classStatsLoading = ref(true);
+const allRecordsLoading = ref(true);
 const handoversLoading = ref(true);
 
 // 資料狀態
@@ -378,10 +404,18 @@ const stats = ref({
   weeklyNewClients: 0,
   pinnedRecords: 0,
 });
-const recentRecords = ref<any[]>([]);
+const allRecords = ref<any[]>([]);
 const pinnedRecords = ref<any[]>([]);
-const classStats = ref<{ className: string; clientCount: number }[]>([]);
 const pendingHandovers = ref<any[]>([]);
+
+// 搜尋和篩選狀態
+const searchQuery = ref("");
+const selectedRecordType = ref<string | null>(null);
+const searchStartDate = ref<Date | null>(null);
+const searchEndDate = ref<Date | null>(null);
+const showPinnedOnly = ref(false);
+const currentPage = ref(0);
+const recordsPerPage = ref(10);
 
 // 當前日期時間
 const currentDate = ref("");
@@ -392,11 +426,29 @@ const updateDateTime = () => {
   currentTime.value = dayjs().format("HH:mm:ss");
 };
 
+// 記錄類型選項
+const recordTypeOptions = ref([
+  { label: "照護紀錄", value: "care" },
+  { label: "情緒紀錄", value: "emotion" },
+  { label: "解便紀錄", value: "bowel" },
+  { label: "癲癇紀錄", value: "seizure" },
+  { label: "生理期紀錄", value: "menstrual" },
+  { label: "班務交接", value: "handover" },
+  { label: "家屬聯絡", value: "familyContact" },
+]);
+
 // 紀錄類型映射
 const RECORD_TYPE_META: Record<
   string,
   { label: string; severity: "success" | "info" | "warn" | "danger" | "secondary" | "contrast" }
 > = {
+  care: { label: "照護紀錄", severity: "info" },
+  emotion: { label: "情緒紀錄", severity: "warn" },
+  bowel: { label: "解便紀錄", severity: "secondary" },
+  seizure: { label: "癲癇紀錄", severity: "danger" },
+  menstrual: { label: "生理期紀錄", severity: "contrast" },
+  handover: { label: "班務交接", severity: "warn" },
+  familyContact: { label: "家屬聯絡", severity: "success" },
   daily_care: { label: "日常照護", severity: "info" },
   health_observation: { label: "健康觀察", severity: "warn" },
   activity: { label: "活動參與", severity: "success" },
@@ -406,72 +458,85 @@ const RECORD_TYPE_META: Record<
   other: { label: "其他", severity: "secondary" },
 };
 
-// 計算屬性
-const hasClassStats = computed(() => classStats.value.length > 0);
+// 計算屬性 - 篩選後的記錄
+const filteredRecords = computed(() => {
+  let filtered = [...allRecords.value];
 
-const classChartData = computed(() => ({
-  labels: classStats.value.map((c) => c.className),
-  datasets: [
-    {
-      label: "個案數量",
-      data: classStats.value.map((c) => c.clientCount),
-      backgroundColor: [
-        "rgba(59, 130, 246, 0.8)",
-        "rgba(16, 185, 129, 0.8)",
-        "rgba(245, 158, 11, 0.8)",
-        "rgba(239, 68, 68, 0.8)",
-        "rgba(139, 92, 246, 0.8)",
-        "rgba(236, 72, 153, 0.8)",
-      ],
-      borderColor: [
-        "rgb(59, 130, 246)",
-        "rgb(16, 185, 129)",
-        "rgb(245, 158, 11)",
-        "rgb(239, 68, 68)",
-        "rgb(139, 92, 246)",
-        "rgb(236, 72, 153)",
-      ],
-      borderWidth: 2,
-    },
-  ],
-}));
+  // 搜尋關鍵字
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(
+      (r) =>
+        r.clientName?.toLowerCase().includes(query) ||
+        r.summary?.toLowerCase().includes(query)
+    );
+  }
 
-const classChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false,
-    },
-    tooltip: {
-      callbacks: {
-        label: (context: any) => {
-          return `個案數: ${context.parsed.y} 位`;
-        },
-      },
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: {
-        stepSize: 1,
-        color: "#6b7280",
-      },
-      grid: {
-        color: "rgba(107, 114, 128, 0.1)",
-      },
-    },
-    x: {
-      ticks: {
-        color: "#374151",
-      },
-      grid: {
-        display: false,
-      },
-    },
-  },
-};
+  // 記錄類型篩選
+  if (selectedRecordType.value) {
+    filtered = filtered.filter((r) => r.type === selectedRecordType.value);
+  }
+
+  // 日期範圍篩選
+  if (searchStartDate.value) {
+    filtered = filtered.filter((r) => {
+      const recordDate = toDate(r.date);
+      return recordDate && dayjs(recordDate).isAfter(dayjs(searchStartDate.value).startOf('day'));
+    });
+  }
+  if (searchEndDate.value) {
+    filtered = filtered.filter((r) => {
+      const recordDate = toDate(r.date);
+      return recordDate && dayjs(recordDate).isBefore(dayjs(searchEndDate.value).endOf('day'));
+    });
+  }
+
+  // 僅顯示釘選
+  if (showPinnedOnly.value) {
+    filtered = filtered.filter((r) => r.isPinned);
+  }
+
+  // 分頁
+  const start = currentPage.value * recordsPerPage.value;
+  const end = start + recordsPerPage.value;
+  return filtered.slice(start, end);
+});
+
+const totalFilteredRecords = computed(() => {
+  let filtered = [...allRecords.value];
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(
+      (r) =>
+        r.clientName?.toLowerCase().includes(query) ||
+        r.summary?.toLowerCase().includes(query)
+    );
+  }
+
+  if (selectedRecordType.value) {
+    filtered = filtered.filter((r) => r.type === selectedRecordType.value);
+  }
+
+  if (searchStartDate.value) {
+    filtered = filtered.filter((r) => {
+      const recordDate = toDate(r.date);
+      return recordDate && dayjs(recordDate).isAfter(dayjs(searchStartDate.value).startOf('day'));
+    });
+  }
+  if (searchEndDate.value) {
+    filtered = filtered.filter((r) => {
+      const recordDate = toDate(r.date);
+      return recordDate && dayjs(recordDate).isBefore(dayjs(searchEndDate.value).endOf('day'));
+    });
+  }
+
+  if (showPinnedOnly.value) {
+    filtered = filtered.filter((r) => r.isPinned);
+  }
+
+  return filtered.length;
+});
 
 // 載入統計資料
 const loadStats = async () => {
@@ -498,9 +563,9 @@ const loadStats = async () => {
     });
     stats.value.todayRecords = todayRecords.length;
 
-    // 載入釘選紀錄數量
-    const pinned = await getPinnedRecords(100);
-    stats.value.pinnedRecords = pinned.length;
+    // 載入釘選紀錄數量 - 這會在 loadAllRecords 後計算
+    // 暫時設為 0，等載入所有記錄後再更新
+    stats.value.pinnedRecords = 0;
   } catch (error) {
     console.error("載入統計資料失敗:", error);
   } finally {
@@ -508,60 +573,165 @@ const loadStats = async () => {
   }
 };
 
-// 載入最近紀錄
-const loadRecentRecords = async () => {
-  recordsLoading.value = true;
+// 載入所有記錄
+const loadAllRecords = async () => {
+  allRecordsLoading.value = true;
   try {
-    const records = await getRecords({ limitCount: 10 });
-    recentRecords.value = records;
+    const userId = userProfile.value?.id;
 
-    // 載入釘選紀錄
-    const pinned = await getPinnedRecords(5);
-    pinnedRecords.value = pinned;
-  } catch (error) {
-    console.error("載入紀錄失敗:", error);
-  } finally {
-    recordsLoading.value = false;
-  }
-};
+    // 並行載入所有類型的記錄
+    const [careRecords, emotionRecords, bowelRecords, seizureRecords, menstrualRecords, handoverRecords, familyContactRecords] =
+      await Promise.all([
+        getRecords({ limitCount: 100 }),
+        getEmotionRecords({ limitCount: 100 }),
+        getBowelRecords({ limitCount: 100 }),
+        getSeizureRecords({ limitCount: 100 }),
+        getMenstrualRecords({ limitCount: 100 }),
+        getHandovers({ limitCount: 100 }),
+        getContacts({ limitCount: 100 }),
+      ]);
 
-// 載入班級統計
-const loadClassStats = async () => {
-  classStatsLoading.value = true;
-  try {
-    const [clients, classes] = await Promise.all([
-      getClients(),
-      getClasses(),
-    ]);
+    // 將所有記錄轉換為統一格式
+    const records: any[] = [];
 
-    // 計算每個班級的個案數量
-    const classCountMap = new Map<string, { className: string; count: number }>();
-
-    classes.forEach((cls: any) => {
-      classCountMap.set(cls.id, {
-        className: cls.className || "未命名班級",
-        count: 0,
+    // 照護紀錄
+    careRecords.forEach((record: any) => {
+      records.push({
+        id: record.id,
+        type: "care",
+        collectionName: "records",
+        clientId: record.clientId,
+        clientName: record.clientName,
+        date: record.recordDate,
+        summary: record.content || record.notes || "",
+        recordedByName: record.recordedByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
       });
     });
 
-    clients.forEach((client: any) => {
-      if (client.classId && classCountMap.has(client.classId)) {
-        const classData = classCountMap.get(client.classId)!;
-        classData.count++;
-      }
+    // 情緒紀錄
+    emotionRecords.forEach((record: any) => {
+      const symptomsText = record.symptoms?.slice(0, 2).join(", ") || "";
+      records.push({
+        id: record.id,
+        type: "emotion",
+        collectionName: "emotionRecords",
+        clientId: record.clientId,
+        clientName: record.clientName,
+        date: record.occurredDate,
+        summary: `情境: ${record.context}, 症狀: ${symptomsText}...`,
+        recordedByName: record.recordedByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
+      });
     });
 
-    classStats.value = Array.from(classCountMap.values())
-      .map((data) => ({
-        className: data.className,
-        clientCount: data.count,
-      }))
-      .filter((data) => data.clientCount > 0)
-      .sort((a, b) => b.clientCount - a.clientCount);
+    // 解便紀錄
+    bowelRecords.forEach((record: any) => {
+      records.push({
+        id: record.id,
+        type: "bowel",
+        collectionName: "bowelRecords",
+        clientId: record.clientId,
+        clientName: record.clientName,
+        date: record.occurredDate,
+        summary: `解便量: ${record.amount}, 顏色: ${record.color}`,
+        recordedByName: record.recordedByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
+      });
+    });
+
+    // 癲癇紀錄
+    seizureRecords.forEach((record: any) => {
+      records.push({
+        id: record.id,
+        type: "seizure",
+        collectionName: "seizureRecords",
+        clientId: record.clientId,
+        clientName: record.clientName,
+        date: record.occurredDate,
+        summary: `發作時長: ${record.durationSeconds}秒, 意識: ${record.consciousnessState}`,
+        recordedByName: record.recordedByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
+      });
+    });
+
+    // 生理期紀錄
+    menstrualRecords.forEach((record: any) => {
+      records.push({
+        id: record.id,
+        type: "menstrual",
+        collectionName: "menstrualRecords",
+        clientId: record.clientId,
+        clientName: record.clientName,
+        date: record.startDate,
+        summary: `經血量: ${record.flowAmount}, 疼痛: ${record.painLevel}`,
+        recordedByName: record.recordedByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
+      });
+    });
+
+    // 班務交接
+    handoverRecords.forEach((record: any) => {
+      const clientNames = record.targetClients?.map((c: any) => c.clientName).join(", ") || "無特定對象";
+      records.push({
+        id: record.id,
+        type: "handover",
+        collectionName: "handovers",
+        clientId: record.targetClients?.[0]?.clientId || "",
+        clientName: clientNames,
+        date: record.shiftDate,
+        summary: `${getShiftLabel(record.shiftType)} - ${record.content}`,
+        recordedByName: record.createdByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
+      });
+    });
+
+    // 家屬聯絡
+    familyContactRecords.forEach((record: any) => {
+      records.push({
+        id: record.id,
+        type: "familyContact",
+        collectionName: "familyContacts",
+        clientId: record.clientId,
+        clientName: record.clientName,
+        date: record.contactDate,
+        summary: `聯絡對象: ${record.contactTarget}, 方式: ${record.contactMethod} - ${record.content}`,
+        recordedByName: record.recordedByName,
+        isPinned: record.isPinned && record.pinnedBy?.includes(userId),
+        pinnedBy: record.pinnedBy || [],
+        rawData: record,
+      });
+    });
+
+    // 按日期排序
+    allRecords.value = records.sort((a, b) => {
+      const dateA = toDate(a.date);
+      const dateB = toDate(b.date);
+      if (!dateA || !dateB) return 0;
+      return dayjs(dateB).valueOf() - dayjs(dateA).valueOf();
+    });
+
+    // 更新釘選紀錄
+    pinnedRecords.value = records.filter((r) => r.isPinned).slice(0, 5);
+
+    // 更新釘選數量統計
+    stats.value.pinnedRecords = records.filter((r) => r.isPinned).length;
   } catch (error) {
-    console.error("載入班級統計失敗:", error);
+    console.error("載入記錄失敗:", error);
   } finally {
-    classStatsLoading.value = false;
+    allRecordsLoading.value = false;
   }
 };
 
@@ -598,7 +768,7 @@ const formatHandoverDate = (date: any) => {
 
 // 載入所有儀表板資料
 const loadDashboardData = async () => {
-  await Promise.all([loadStats(), loadRecentRecords(), loadClassStats(), loadPendingHandovers()]);
+  await Promise.all([loadStats(), loadAllRecords(), loadPendingHandovers()]);
 };
 
 // 格式化日期
@@ -616,9 +786,57 @@ const getRecordTypeSeverity = (type: string) => {
   return RECORD_TYPE_META[type]?.severity || "secondary";
 };
 
-// 查看紀錄
-const viewRecord = (record: any) => {
-  navigateTo(`/clients/${record.clientId}`);
+// 查看紀錄詳情
+const viewRecordDetail = (record: any) => {
+  // 根據記錄類型導航到相應頁面
+  if (record.type === "care") {
+    navigateTo(`/records`);
+  } else {
+    navigateTo(`/clients/${record.clientId}`);
+  }
+};
+
+// 切換釘選狀態
+const handleTogglePin = async (record: any) => {
+  try {
+    // 根據記錄類型調用相應的 togglePin 函數
+    switch (record.type) {
+      case "care":
+        await toggleCarePin(record.id, record.isPinned);
+        break;
+      case "emotion":
+        await toggleEmotionPin(record.id, record.isPinned);
+        break;
+      case "bowel":
+        await toggleBowelPin(record.id, record.isPinned);
+        break;
+      case "seizure":
+        await toggleSeizurePin(record.id, record.isPinned);
+        break;
+      case "menstrual":
+        await toggleMenstrualPin(record.id, record.isPinned);
+        break;
+      case "handover":
+        await toggleHandoverPin(record.id, record.isPinned);
+        break;
+      case "familyContact":
+        await toggleFamilyContactPin(record.id, record.isPinned);
+        break;
+      default:
+        throw new Error("不支援的記錄類型");
+    }
+
+    // 重新載入記錄
+    await loadAllRecords();
+  } catch (error) {
+    console.error("釘選失敗:", error);
+    alert("釘選操作失敗");
+  }
+};
+
+// 分頁切換
+const onPageChange = (event: any) => {
+  currentPage.value = event.page;
 };
 
 // 匯出報表

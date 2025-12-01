@@ -149,8 +149,8 @@
               <i class="pi pi-history"></i>
             </div>
             <div>
-              <span class="text-xl font-semibold text-gray-800">近期照護紀錄</span>
-              <p class="text-sm text-gray-500">最近 6 筆照護紀錄</p>
+              <span class="text-xl font-semibold text-gray-800">近期個案記錄</span>
+              <p class="text-sm text-gray-500">最近 6 筆相關記錄（含照護、醫療、交接等）</p>
             </div>
           </div>
         </template>
@@ -160,7 +160,7 @@
             class="py-10 flex items-center justify-center text-gray-500"
           >
             <i class="pi pi-spin pi-spinner text-lg mr-2"></i>
-            讀取照護紀錄中...
+            讀取個案記錄中...
           </div>
           <div v-else-if="recentRecords.length === 0" class="py-10 text-center">
             <div
@@ -168,7 +168,7 @@
             >
               <i class="pi pi-file-edit text-4xl text-gray-400"></i>
             </div>
-            <p class="text-gray-600">目前尚無照護紀錄</p>
+            <p class="text-gray-600">目前尚無相關記錄</p>
           </div>
           <div v-else class="space-y-5">
             <div
@@ -299,6 +299,12 @@ const clientId = computed(() => route.params.id as string);
 
 const { getClient } = useClients();
 const { getRecords } = useRecords();
+const { getEmotionRecords } = useEmotionRecords();
+const { getBowelRecords } = useBowelRecords();
+const { getSeizureRecords } = useSeizureRecords();
+const { getMenstrualRecords } = useMenstrualRecords();
+const { getHandovers } = useHandover();
+const { getContacts } = useFamilyContacts();
 const { getVitalSignsTrend } = useVitalSigns();
 const { calculateAge, formatDate } = useUtils();
 const toast = useToast();
@@ -330,6 +336,7 @@ const RECORD_TYPE_META: Record<
   string,
   { label: string; severity: "success" | "info" | "warn" | "danger" | "secondary" | "contrast" }
 > = {
+  // 照護紀錄類型
   daily_care: { label: "日常照護", severity: "info" },
   health_observation: { label: "健康觀察", severity: "warn" },
   activity: { label: "活動參與", severity: "success" },
@@ -337,6 +344,14 @@ const RECORD_TYPE_META: Record<
   behavior: { label: "行為記錄", severity: "contrast" },
   special_event: { label: "特殊事件", severity: "danger" },
   other: { label: "其他", severity: "secondary" },
+  // 醫療照護類型
+  emotion: { label: "情緒紀錄", severity: "warn" },
+  bowel: { label: "解便紀錄", severity: "info" },
+  seizure: { label: "癲癇紀錄", severity: "danger" },
+  menstrual: { label: "生理期紀錄", severity: "secondary" },
+  // 其他類型
+  handover: { label: "班務交接", severity: "contrast" },
+  familyContact: { label: "家屬聯絡", severity: "success" },
 };
 
 const goBack = () => navigateTo("/clients");
@@ -513,8 +528,198 @@ const loadRecentRecords = async (id: string) => {
   if (!id) return;
   recordsLoading.value = true;
   try {
-    const records = await getRecords({ clientId: id, limitCount: 6 });
-    recentRecords.value = records || [];
+    // 並行獲取所有類型的記錄
+    const [
+      careRecords,
+      emotionRecords,
+      bowelRecords,
+      seizureRecords,
+      menstrualRecords,
+      handoverRecords,
+      familyContactRecords,
+    ] = await Promise.all([
+      getRecords({ clientId: id, limitCount: 50 }),
+      getEmotionRecords({ clientId: id, limitCount: 50 }),
+      getBowelRecords({ clientId: id, limitCount: 50 }),
+      getSeizureRecords({ clientId: id, limitCount: 50 }),
+      getMenstrualRecords({ clientId: id, limitCount: 50 }),
+      getHandovers({ limitCount: 50 }), // handover 沒有 clientId 過濾，稍後在前端過濾
+      getContacts({ clientId: id, limitCount: 50 }),
+    ]);
+
+    // 轉換並合併所有記錄
+    const allRecords: any[] = [];
+
+    // 照護紀錄
+    if (careRecords) {
+      careRecords.forEach((record: any) => {
+        allRecords.push({
+          id: record.id,
+          type: "care",
+          recordType: record.recordType,
+          clientId: record.clientId,
+          clientName: record.clientName,
+          content: record.content,
+          notes: record.notes,
+          recordDate: record.recordDate,
+          recordedByName: record.recordedByName,
+          isPinned: record.isPinned,
+        });
+      });
+    }
+
+    // 情緒紀錄
+    if (emotionRecords) {
+      emotionRecords.forEach((record: any) => {
+        const contentParts: string[] = [];
+        if (record.emotionType) contentParts.push(`情緒：${record.emotionType}`);
+        if (record.trigger) contentParts.push(`觸發因素：${record.trigger}`);
+        if (record.durationMinutes) contentParts.push(`持續時間：${record.durationMinutes} 分鐘`);
+
+        allRecords.push({
+          id: record.id,
+          type: "emotion",
+          recordType: "emotion",
+          clientId: record.clientId,
+          clientName: record.clientName,
+          content: contentParts.length > 0 ? contentParts.join("\n") : "無記錄內容",
+          notes: record.notes,
+          recordDate: record.occurredDate,
+          recordedByName: record.recordedByName,
+          isPinned: record.isPinned,
+        });
+      });
+    }
+
+    // 解便紀錄
+    if (bowelRecords) {
+      bowelRecords.forEach((record: any) => {
+        const contentParts: string[] = [];
+        if (record.bowelType) contentParts.push(`類型：${record.bowelType}`);
+        if (record.shape) contentParts.push(`形狀：${record.shape}`);
+        if (record.color) contentParts.push(`顏色：${record.color}`);
+
+        allRecords.push({
+          id: record.id,
+          type: "bowel",
+          recordType: "bowel",
+          clientId: record.clientId,
+          clientName: record.clientName,
+          content: contentParts.length > 0 ? contentParts.join("\n") : "無記錄內容",
+          notes: record.notes,
+          recordDate: record.occurredDate,
+          recordedByName: record.recordedByName,
+          isPinned: record.isPinned,
+        });
+      });
+    }
+
+    // 癲癇紀錄
+    if (seizureRecords) {
+      seizureRecords.forEach((record: any) => {
+        const contentParts: string[] = [];
+        if (record.seizureType) contentParts.push(`發作類型：${record.seizureType}`);
+        if (record.durationMinutes) contentParts.push(`持續時間：${record.durationMinutes} 分鐘`);
+        if (record.severity) contentParts.push(`嚴重程度：${record.severity}`);
+
+        allRecords.push({
+          id: record.id,
+          type: "seizure",
+          recordType: "seizure",
+          clientId: record.clientId,
+          clientName: record.clientName,
+          content: contentParts.length > 0 ? contentParts.join("\n") : "無記錄內容",
+          notes: record.notes,
+          recordDate: record.occurredDate,
+          recordedByName: record.recordedByName,
+          isPinned: record.isPinned,
+        });
+      });
+    }
+
+    // 生理期紀錄
+    if (menstrualRecords) {
+      menstrualRecords.forEach((record: any) => {
+        const contentParts: string[] = [];
+        if (record.startDate) contentParts.push(`開始日期：${formatDate(record.startDate)}`);
+        if (record.endDate) {
+          contentParts.push(`結束日期：${formatDate(record.endDate)}`);
+        } else {
+          contentParts.push(`狀態：進行中`);
+        }
+        if (record.flow) contentParts.push(`流量：${record.flow}`);
+
+        allRecords.push({
+          id: record.id,
+          type: "menstrual",
+          recordType: "menstrual",
+          clientId: record.clientId,
+          clientName: record.clientName,
+          content: contentParts.length > 0 ? contentParts.join("\n") : "無記錄內容",
+          notes: record.notes,
+          recordDate: record.startDate,
+          recordedByName: record.recordedByName,
+          isPinned: record.isPinned,
+        });
+      });
+    }
+
+    // 班務交接 - 過濾包含此服務對象的記錄
+    if (handoverRecords) {
+      handoverRecords.forEach((record: any) => {
+        // 檢查此交接記錄的服務對象是否包含當前個案
+        const isRelatedToClient = record.targetClients?.some(
+          (target: any) => target.clientId === id
+        );
+
+        if (isRelatedToClient) {
+          allRecords.push({
+            id: record.id,
+            type: "handover",
+            recordType: "handover",
+            clientId: id,
+            clientName: client.value?.name,
+            content: record.content || "",
+            notes: `班次：${record.shiftType || "未記錄"}`,
+            recordDate: record.shiftDate,
+            recordedByName: record.createdByName,
+            isPinned: record.isPinned,
+          });
+        }
+      });
+    }
+
+    // 家屬聯絡
+    if (familyContactRecords) {
+      familyContactRecords.forEach((record: any) => {
+        const contentParts: string[] = [];
+        if (record.contactTarget) contentParts.push(`聯絡對象：${record.contactTarget}`);
+        if (record.contactMethod) contentParts.push(`聯絡方式：${record.contactMethod}`);
+        if (record.content) contentParts.push(`內容：${record.content}`);
+
+        allRecords.push({
+          id: record.id,
+          type: "familyContact",
+          recordType: "familyContact",
+          clientId: record.clientId,
+          clientName: record.clientName,
+          content: contentParts.length > 0 ? contentParts.join("\n") : "無記錄內容",
+          notes: record.notes,
+          recordDate: record.contactDate,
+          recordedByName: record.recordedByName,
+          isPinned: record.isPinned,
+        });
+      });
+    }
+
+    // 按日期降序排序並取前 6 筆
+    allRecords.sort((a, b) => {
+      const dateA = a.recordDate?.toDate?.() || new Date(a.recordDate || 0);
+      const dateB = b.recordDate?.toDate?.() || new Date(b.recordDate || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    recentRecords.value = allRecords.slice(0, 6);
   } catch (error) {
     console.error("Failed to load client records:", error);
     recentRecords.value = [];
@@ -527,7 +732,7 @@ const loadVitalTrend = async (id: string) => {
   if (!id) return;
   vitalsLoading.value = true;
   try {
-    const trend = await getVitalSignsTrend(id, 12);
+    const trend = await getVitalSignsTrend(id);
     vitalTrend.value = trend;
   } catch (error) {
     console.error("Failed to load vital signs trend:", error);

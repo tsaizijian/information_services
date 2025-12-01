@@ -26,6 +26,10 @@ export interface BowelRecord {
   recordedBy: string;
   recordedByName: string;
 
+  // 釘選功能
+  isPinned?: boolean;
+  pinnedBy?: string[];
+
   createdAt?: any;
   updatedAt?: any;
 }
@@ -119,6 +123,8 @@ export const useBowelRecords = () => {
         : recordData.occurredDate,
       recordedBy: userProfile.value?.id || recordData.recordedBy,
       recordedByName: userProfile.value?.displayName || recordData.recordedByName,
+      isPinned: false,
+      pinnedBy: [],
     };
     return await addDocument("bowelRecords", data);
   };
@@ -144,12 +150,35 @@ export const useBowelRecords = () => {
   const getSpecialConditionLabel = (value: string) => SPECIAL_CONDITION_OPTIONS.find(o => o.value === value)?.label || value;
   const getAccompanyingSymptomLabel = (value: string) => ACCOMPANYING_SYMPTOM_OPTIONS.find(o => o.value === value)?.label || value;
 
+  // 釘選/取消釘選
+  const togglePin = async (recordId: string, currentIsPinned: boolean) => {
+    const record = await getBowelRecord(recordId);
+    if (!record) {
+      throw new Error("找不到記錄");
+    }
+    const pinnedBy = record.pinnedBy || [];
+    const userId = userProfile.value?.id;
+
+    if (currentIsPinned && userId) {
+      const index = pinnedBy.indexOf(userId);
+      if (index > -1) pinnedBy.splice(index, 1);
+    } else if (!currentIsPinned && userId && !pinnedBy.includes(userId)) {
+      pinnedBy.push(userId);
+    }
+
+    return await updateDocument("bowelRecords", recordId, {
+      isPinned: pinnedBy.length > 0,
+      pinnedBy,
+    });
+  };
+
   return {
     getBowelRecords,
     getBowelRecord,
     createBowelRecord,
     updateBowelRecord,
     deleteBowelRecord,
+    togglePin,
     getAmountLabel,
     getColorLabel,
     getColorSeverity,
