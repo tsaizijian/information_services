@@ -64,15 +64,16 @@
           </Column>
           <Column field="content" header="內容摘要">
             <template #body="slotProps">
-              <div class="truncate max-w-xs" :title="slotProps.data.content">
+              <div class="truncate max-w-xs cursor-pointer hover:text-blue-600" title="點擊查看完整內容" @click="openViewDialog(slotProps.data)">
                 {{ slotProps.data.content }}
               </div>
             </template>
           </Column>
           <Column field="recordedByName" header="記錄者"></Column>
-          <Column header="操作" style="width: 100px">
+          <Column header="操作" style="width: 150px">
             <template #body="slotProps">
               <div class="flex gap-2">
+                <Button icon="pi pi-eye" text rounded severity="secondary" @click="openViewDialog(slotProps.data)" title="查看詳情" />
                 <Button icon="pi pi-pencil" text rounded severity="info" @click="openEditDialog(slotProps.data)" />
                 <Button icon="pi pi-trash" text rounded severity="danger" @click="confirmDelete(slotProps.data)" />
               </div>
@@ -124,6 +125,58 @@
       </template>
     </Dialog>
 
+    <!-- 查看詳情對話框 -->
+    <Dialog v-model:visible="viewDialogVisible" header="聯絡紀錄詳情" modal class="w-full max-w-2xl">
+      <div v-if="viewingRecord" class="flex flex-col gap-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-medium text-gray-600">個案姓名</label>
+            <p class="mt-1 text-lg">{{ viewingRecord.clientName }}</p>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-600">聯絡日期</label>
+            <p class="mt-1 text-lg">{{ formatDate(viewingRecord.contactDate) }}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-medium text-gray-600">通話對象</label>
+            <p class="mt-1 text-lg">{{ viewingRecord.contactTarget }}</p>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-600">聯絡方式</label>
+            <p class="mt-1">
+              <Tag :value="viewingRecord.contactMethod" :severity="getMethodSeverity(viewingRecord.contactMethod)" />
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-600">完整內容</label>
+          <div class="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-wrap">
+            {{ viewingRecord.content }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t">
+          <div>
+            <label class="text-sm font-medium text-gray-600">記錄者</label>
+            <p class="mt-1">{{ viewingRecord.recordedByName }}</p>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-600">建立時間</label>
+            <p class="mt-1 text-sm text-gray-500">{{ formatDate(viewingRecord.createdAt) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="關閉" icon="pi pi-times" @click="viewDialogVisible = false" />
+        <Button label="編輯" icon="pi pi-pencil" severity="info" @click="editFromView" />
+      </template>
+    </Dialog>
+
     <!-- 刪除確認 -->
     <ConfirmDialog />
   </div>
@@ -146,7 +199,9 @@ const saving = ref(false);
 const records = ref<any[]>([]);
 const clients = ref<any[]>([]);
 const dialogVisible = ref(false);
+const viewDialogVisible = ref(false);
 const isEditing = ref(false);
+const viewingRecord = ref<any>(null);
 
 // Filters
 const filterClientId = ref();
@@ -222,6 +277,16 @@ const openCreateDialog = () => {
     content: "",
   };
   dialogVisible.value = true;
+};
+
+const openViewDialog = (record: any) => {
+  viewingRecord.value = record;
+  viewDialogVisible.value = true;
+};
+
+const editFromView = () => {
+  viewDialogVisible.value = false;
+  openEditDialog(viewingRecord.value);
 };
 
 const openEditDialog = (record: any) => {
