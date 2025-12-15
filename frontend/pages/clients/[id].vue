@@ -19,6 +19,14 @@
       </div>
       <div class="flex gap-3">
         <Button
+          label="匯出 Excel"
+          icon="pi pi-file-excel"
+          severity="success"
+          outlined
+          :disabled="!client"
+          @click="exportToExcel"
+        />
+        <Button
           label="返回列表"
           icon="pi pi-arrow-left"
           severity="secondary"
@@ -469,6 +477,8 @@ import {
   Legend,
 } from "chart.js";
 import { useToast } from "primevue/usetoast";
+import * as XLSX from "xlsx";
+import dayjs from "dayjs";
 
 ChartJS.register(
   LineElement,
@@ -814,4 +824,129 @@ watch(
   },
   { immediate: true }
 );
+
+const exportToExcel = () => {
+  if (!client.value) return;
+
+  // 準備照護紀錄資料
+  const careRecordsData = recentRecords.value.map(record => ({
+    "日期": formatRecordDate(record.recordDate),
+    "服務對象": client.value.name,
+    "記錄類型": getRecordTypeLabel(record.recordType),
+    "內容": record.content || "-",
+    "紀錄者": record.recordedByName || "未標示",
+    "備註": record.notes || "-"
+  }));
+
+  // 準備家屬聯絡資料
+  const contactsData = familyContacts.value.map(contact => ({
+    "日期": formatRecordDate(contact.contactDate),
+    "服務對象": client.value.name,
+    "聯絡對象": contact.contactTarget,
+    "聯絡方式": contact.contactMethod,
+    "內容": contact.content,
+    "紀錄者": contact.recordedByName || "未標示"
+  }));
+
+  // 準備班務交接資料
+  const handoversData = handovers.value.map(handover => ({
+    "日期": formatDate(handover.handoverDate),
+    "服務對象": client.value.name,
+    "班別": handover.shiftType,
+    "內容": handover.content,
+    "紀錄者": handover.handoverByName,
+    "確認狀態": handover.isConfirmed ? "已確認" : "未確認"
+  }));
+
+  // 準備醫療照護資料
+  const bowelData = bowelRecords.value.map(record => ({
+    "日期": formatRecordDate(record.recordDate),
+    "服務對象": client.value.name,
+    "類型": "排便紀錄",
+    "時間": record.time,
+    "性狀": record.consistency,
+    "量": record.amount,
+    "紀錄者": record.recordedByName || "未標示"
+  }));
+
+  const emotionData = emotionRecords.value.map(record => ({
+    "日期": formatRecordDate(record.recordDate),
+    "服務對象": client.value.name,
+    "類型": "情緒紀錄",
+    "情緒類型": record.emotionType,
+    "誘發事件": record.triggerEvent,
+    "處理方式": record.response,
+    "紀錄者": record.recordedByName || "未標示"
+  }));
+
+  const seizureData = seizureRecords.value.map(record => ({
+    "日期": formatRecordDate(record.recordDate),
+    "服務對象": client.value.name,
+    "類型": "癲癇紀錄",
+    "開始時間": record.startTime,
+    "持續時間": record.duration,
+    "癲癇類型": record.seizureType,
+    "紀錄者": record.recordedByName || "未標示"
+  }));
+
+  const menstrualData = menstrualRecords.value.map(record => ({
+    "開始日期": formatDate(record.startDate),
+    "結束日期": formatDate(record.endDate),
+    "服務對象": client.value.name,
+    "類型": "生理期紀錄",
+    "經血量": record.flow,
+    "疼痛程度": record.painLevel,
+    "紀錄者": record.recordedByName || "未標示"
+  }));
+
+  // 建立工作簿
+  const wb = XLSX.utils.book_new();
+
+  // 添加各個工作表
+  if (careRecordsData.length > 0) {
+    const ws1 = XLSX.utils.json_to_sheet(careRecordsData);
+    XLSX.utils.book_append_sheet(wb, ws1, "照護紀錄");
+  }
+
+  if (contactsData.length > 0) {
+    const ws2 = XLSX.utils.json_to_sheet(contactsData);
+    XLSX.utils.book_append_sheet(wb, ws2, "家屬聯絡");
+  }
+
+  if (handoversData.length > 0) {
+    const ws3 = XLSX.utils.json_to_sheet(handoversData);
+    XLSX.utils.book_append_sheet(wb, ws3, "班務交接");
+  }
+
+  if (bowelData.length > 0) {
+    const ws4 = XLSX.utils.json_to_sheet(bowelData);
+    XLSX.utils.book_append_sheet(wb, ws4, "排便紀錄");
+  }
+
+  if (emotionData.length > 0) {
+    const ws5 = XLSX.utils.json_to_sheet(emotionData);
+    XLSX.utils.book_append_sheet(wb, ws5, "情緒紀錄");
+  }
+
+  if (seizureData.length > 0) {
+    const ws6 = XLSX.utils.json_to_sheet(seizureData);
+    XLSX.utils.book_append_sheet(wb, ws6, "癲癇紀錄");
+  }
+
+  if (menstrualData.length > 0) {
+    const ws7 = XLSX.utils.json_to_sheet(menstrualData);
+    XLSX.utils.book_append_sheet(wb, ws7, "生理期紀錄");
+  }
+
+  // 匯出檔案
+  const fileName = `${client.value.name}_個案資料_${dayjs().format("YYYYMMDD")}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+
+  toast.add({
+    severity: "success",
+    summary: "匯出成功",
+    detail: `已匯出 ${client.value.name} 的完整資料`,
+    life: 3000,
+  });
+};
 </script>

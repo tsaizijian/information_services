@@ -9,13 +9,23 @@
         </h1>
         <p class="text-gray-500 mt-2">記錄每一次的用心照顧與陪伴時光</p>
       </div>
-      <Button
-        label="新增紀錄"
-        icon="pi pi-plus"
-        size="large"
-        @click="openCreateRecord"
-        class="shadow-md"
-      />
+      <div class="flex gap-3">
+        <Button
+          label="匯出 Word"
+          icon="pi pi-file-word"
+          severity="info"
+          outlined
+          @click="openExportDialog"
+          :disabled="filteredRecords.length === 0"
+        />
+        <Button
+          label="新增紀錄"
+          icon="pi pi-plus"
+          size="large"
+          @click="openCreateRecord"
+          class="shadow-md"
+        />
+      </div>
     </div>
 
     <!-- 搜尋與篩選卡片 -->
@@ -552,6 +562,98 @@
         </div>
       </template>
     </Dialog>
+
+    <!-- 匯出選擇對話框 -->
+    <Dialog
+      v-model:visible="showExportDialog"
+      header="匯出 Word 文件"
+      :modal="true"
+      :style="{ width: '600px' }"
+      :draggable="false"
+    >
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"
+          >
+            <i class="pi pi-file-word text-blue-600 text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">匯出 Word 文件</h3>
+            <p class="text-sm text-gray-500">選擇要匯出的個案</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="space-y-4 py-4">
+        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <Checkbox v-model="exportAllClients" inputId="exportAll" binary />
+          <label
+            for="exportAll"
+            class="text-sm font-medium text-gray-700 cursor-pointer"
+          >
+            匯出全部個案 ({{ availableClientsForExport.length }} 位)
+          </label>
+        </div>
+
+        <div v-if="!exportAllClients" class="space-y-2">
+          <label class="text-sm font-medium text-gray-700 block mb-2">
+            選擇個案：
+          </label>
+          <div class="max-h-64 overflow-y-auto space-y-2 p-3 border rounded-lg">
+            <div
+              v-for="client in availableClientsForExport"
+              :key="client.value"
+              class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
+            >
+              <Checkbox
+                v-model="exportSelectedClients"
+                :inputId="client.value"
+                :value="client.value"
+              />
+              <label
+                :for="client.value"
+                class="text-sm text-gray-700 cursor-pointer flex-1"
+              >
+                {{ client.label }}
+                <span class="text-gray-500 text-xs ml-2">
+                  ({{ getClientRecordCount(client.value) }} 筆紀錄)
+                </span>
+              </label>
+            </div>
+          </div>
+          <small v-if="!exportAllClients && exportSelectedClients.length === 0" class="text-orange-500 block mt-2">
+            <i class="pi pi-info-circle mr-1"></i>請至少選擇一位個案
+          </small>
+        </div>
+
+        <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+          <p class="text-sm text-gray-700">
+            <i class="pi pi-info-circle mr-2"></i>
+            匯出的文件將包含選定個案的所有紀錄，每位個案獨立一頁
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="取消"
+            severity="secondary"
+            outlined
+            @click="showExportDialog = false"
+            icon="pi pi-times"
+          />
+          <Button
+            label="開始匯出"
+            icon="pi pi-download"
+            @click="confirmExport"
+            :disabled="!exportAllClients && exportSelectedClients.length === 0"
+            class="shadow-md"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -596,6 +698,9 @@ const deleting = ref(false);
 const showRecordDialog = ref(false);
 const showDeleteDialog = ref(false);
 const showViewDialog = ref(false);
+const showExportDialog = ref(false);
+const exportSelectedClients = ref<string[]>([]);
+const exportAllClients = ref(true);
 const editingRecord = ref<any>(null);
 const deletingRecord = ref<any>(null);
 const viewingRecord = ref<any>(null);
@@ -898,7 +1003,7 @@ const loadRecords = async (filters: Record<string, any> = activeFilters.value) =
   }
 };
 
-// 監聽篩選變化
+// 監聴篩選變化
 watch(
   activeFilters,
   (filters) => {
@@ -906,6 +1011,274 @@ watch(
   },
   { deep: true }
 );
+
+// 匯出功能
+const openExportDialog = () => {
+  exportAllClients.value = true;
+  exportSelectedClients.value = [];
+  showExportDialog.value = true;
+};
+
+const availableClientsForExport = computed(() => {
+  // 從 filteredRecords 中取得有紀錄的個案
+  const clientIds = new Set(filteredRecords.value.map(r => r.clientId));
+  return clientOptions.value.filter(opt => clientIds.has(opt.value));
+});
+
+const getClientRecordCount = (clientId: string) => {
+  return filteredRecords.value.filter(r => r.clientId === clientId).length;
+};
+
+const confirmExport = async () => {
+  const selectedClientIds = exportAllClients.value
+    ? availableClientsForExport.value.map(c => c.value)
+    : exportSelectedClients.value;
+  
+  showExportDialog.value = false;
+  await exportToWord(selectedClientIds);
+};
+
+const exportToWord = async (selectedClientIds: string[]) => {
+  try {
+    console.log('開始匯出 Word...');
+    toast.add({ severity: 'info', summary: '處理中', detail: '正在生成 Word 文件...', life: 3000 });
+
+    const { Document, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType, TextRun, ImageRun } = await import('docx');
+    const { saveAs } = await import('file-saver');
+    const dayjs = (await import('dayjs')).default;
+    
+    // 讀取機構名稱圖片
+    let logoNameImage: any = null;
+    try {
+      const response = await fetch('/logo_name.png');
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      logoNameImage = new Uint8Array(arrayBuffer);
+      console.log('機構名稱圖片載入成功');
+    } catch (error) {
+      console.warn('無法載入機構名稱圖片:', error);
+    }
+
+  // 按個案分組照護紀錄（僅包含選定的個案）
+  const recordsByClient = filteredRecords.value
+    .filter(record => selectedClientIds.includes(record.clientId))
+    .reduce((acc: any, record: any) => {
+      const clientName = record.clientName || "未指定個案";
+      if (!acc[clientName]) {
+        acc[clientName] = [];
+      }
+      acc[clientName].push(record);
+      return acc;
+    }, {});
+
+  const sections: any[] = [];
+
+  // 為每個個案生成內容
+  for (const [clientName, records] of Object.entries(recordsByClient)) {
+    const clientRecords = records as any[];
+    const client = allClients.value.find((c: any) => c.name === clientName);
+    const gender = client?.gender === 'male' ? '男' : client?.gender === 'female' ? '女' : '';
+    const year = new Date().getFullYear() - 1911; // 民國年
+
+    const children: any[] = [];
+    
+    // 標題區域（機構名稱圖置中）
+    if (logoNameImage) {
+      children.push(
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: logoNameImage,
+              transformation: {
+                width: 300,
+                height: 80
+              }
+            })
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          text: "護理紀錄單",
+          alignment: AlignmentType.CENTER,
+          bold: true,
+          spacing: { after: 300 }
+        })
+      );
+    } else {
+      // 如果沒有圖片，只顯示標題
+      children.push(
+        new Paragraph({
+          text: "財團法人桃園市私立",
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          text: "寶貝潛能發展中心",
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          text: "護理紀錄單",
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 300 },
+          bold: true
+        })
+      );
+    }
+    
+    // 個案資訊
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `年${year}       姓名：${clientName}       性別：${gender}` })
+        ],
+        spacing: { after: 200 }
+      })
+    );
+
+    // 建立表格 - 包含已有資料和空白列
+    const tableRows = [
+      // 表頭
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({ text: "日期", alignment: AlignmentType.CENTER })],
+            width: { size: 10, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ text: "服務對象問題", alignment: AlignmentType.CENTER })],
+            width: { size: 20, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ text: "護理紀錄", alignment: AlignmentType.CENTER })],
+            width: { size: 55, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ text: "紀錄者", alignment: AlignmentType.CENTER })],
+            width: { size: 15, type: WidthType.PERCENTAGE }
+          })
+        ]
+      }),
+      // 已有資料列
+      ...clientRecords.map(record => 
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({
+                text: dayjs(record.recordDate?.toDate?.() || record.recordDate).format('MM/DD'),
+                alignment: AlignmentType.CENTER
+              })]
+            }),
+            new TableCell({
+              children: [new Paragraph(
+                typeOptions.find(t => t.value === record.recordType)?.label || record.recordType
+              )]
+            }),
+            new TableCell({
+              children: [new Paragraph(record.content || '')]
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                text: record.recordedByName || '',
+                alignment: AlignmentType.CENTER
+              })]
+            })
+          ]
+        })
+      ),
+      // 添加空白列供手寫使用（至少15列）
+      ...Array.from({ length: Math.max(15 - clientRecords.length, 5) }, () => 
+        new TableRow({
+          height: { value: 600, rule: "atLeast" },
+          children: [
+            new TableCell({ children: [new Paragraph("")] }),
+            new TableCell({ children: [new Paragraph("")] }),
+            new TableCell({ children: [new Paragraph("")] }),
+            new TableCell({ children: [new Paragraph("")] })
+          ]
+        })
+      )
+    ];
+
+    const table = new Table({
+      rows: tableRows,
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      margins: {
+        top: 50,
+        bottom: 50,
+        right: 50,
+        left: 50
+      },
+      columnWidths: [1000, 2000, 5500, 1500],
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 1 },
+        bottom: { style: BorderStyle.SINGLE, size: 1 },
+        left: { style: BorderStyle.SINGLE, size: 1 },
+        right: { style: BorderStyle.SINGLE, size: 1 },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+        insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+      }
+    });
+
+    children.push(table);
+
+    // 簽名欄
+    children.push(
+      new Paragraph({
+        text: "",
+        spacing: { before: 400 }
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: "主任：_________________       " }),
+          new TextRun({ text: "護理師：_________________" })
+        ]
+      })
+    );
+
+    sections.push({
+      properties: {},
+      children
+    });
+  }
+
+  const doc = new Document({
+    sections: sections.map(section => ({
+      ...section,
+      properties: {
+        page: {
+          margin: {
+            top: 720,
+            right: 720,
+            bottom: 720,
+            left: 720
+          }
+        }
+      }
+    }))
+  });
+
+  const blob = await (await import('docx')).Packer.toBlob(doc);
+  saveAs(blob, `護理紀錄單_${dayjs().format("YYYYMMDD")}.docx`);
+  
+  console.log('Word 文件已匯出');
+  toast.add({
+    severity: 'success',
+    summary: '匯出成功',
+    detail: '護理紀錄單已下載',
+    life: 3000
+  });
+} catch (error) {
+  console.error('匯出 Word 失敗:', error);
+  toast.add({
+    severity: 'error',
+    summary: '匯出失敗',
+    detail: '無法匯出 Word 文件，請檢查瀏覽器控制台',
+    life: 5000
+  });
+}
+};
 
 // 初始化
 onMounted(async () => {
