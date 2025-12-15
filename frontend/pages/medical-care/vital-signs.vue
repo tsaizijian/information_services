@@ -388,8 +388,8 @@ const exportYearlyReport = async () => {
     // Load Chinese Font
     let fontLoaded = false;
     const fontUrls = [
-      'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanstc/NotoSansTC-Regular.ttf',
-      'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSansTC/NotoSansTC-Regular.ttf'
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanstc/NotoSansTC%5Bwght%5D.ttf',
+      'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notosanstc/NotoSansTC%5Bwght%5D.ttf'
     ];
 
     for (const url of fontUrls) {
