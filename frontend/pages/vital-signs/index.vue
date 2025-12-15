@@ -733,8 +733,6 @@ import {
   Legend,
 } from "chart.js";
 import { useToast } from "primevue/usetoast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 ChartJS.register(
   LineElement,
@@ -1307,10 +1305,55 @@ const exportExcel = () => {
   XLSX.writeFile(workbook, fileName);
 };
 
-const exportPdf = () => {
+const exportPdf = async () => {
   if (records.value.length === 0) return;
 
+  toast.add({ severity: 'info', summary: '準備匯出中', detail: '正在下載字型檔與產生報表，請稍候...', life: 3000 });
+
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+
   const doc = new jsPDF();
+
+  // Load Chinese Font
+  let fontLoaded = false;
+  const fontUrls = [
+    'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanstc/NotoSansTC-Regular.ttf',
+    'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSansTC/NotoSansTC-Regular.ttf'
+  ];
+
+  for (const url of fontUrls) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) continue;
+      const blob = await response.blob();
+      
+      await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const base64data = reader.result as string;
+              if (base64data) {
+                  const base64Content = base64data.split(',')[1];
+                  doc.addFileToVFS('NotoSansTC-Regular.ttf', base64Content);
+                  doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
+                  doc.setFont('NotoSansTC');
+                  fontLoaded = true;
+              }
+              resolve(null);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+      });
+      if (fontLoaded) break;
+    } catch (e) {
+      console.warn(`Failed to load font from ${url}`, e);
+    }
+  }
+
+  if (!fontLoaded) {
+    toast.add({ severity: 'warn', summary: '字型載入失敗', detail: 'PDF 中文可能無法正確顯示，請檢查網路連線', life: 5000 });
+  }
+
   const title = "生命徵象紀錄";
   doc.setFontSize(16);
   doc.text(title, 14, 18);
@@ -1340,6 +1383,7 @@ const exportPdf = () => {
       record.notes || "",
     ]),
     styles: {
+      font: 'NotoSansTC',
       fontSize: 10,
       cellPadding: 3,
     },
@@ -1349,6 +1393,7 @@ const exportPdf = () => {
   });
 
   doc.save(`生命徵象_${dayjs().format("YYYYMMDD_HHmm")}.pdf`);
+  toast.add({ severity: 'success', summary: '匯出成功', life: 3000 });
 };
 
 watch(
