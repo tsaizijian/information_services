@@ -196,6 +196,35 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // 生命徵象紀錄集合
+    match /vitalSignRecords/{recordId} {
+      // 照顧者和管理員可讀取
+      allow read: if isCaregiverOrAdmin();
+      // 家屬可讀取自己家人的紀錄
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+
+      // 照顧者和管理員可以新增和更新
+      allow create, update: if isCaregiverOrAdmin();
+      // 只有管理員可以刪除
+      allow delete: if isAdmin();
+    }
+
+    // 月份生命徵象紀錄集合 (舊版或彙整用)
+    match /monthlyVitalSigns/{recordId} {
+      allow read: if isCaregiverOrAdmin();
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+      allow create, update: if isCaregiverOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 身體測量紀錄集合 (身高體重)
+    match /physicalRecords/{recordId} {
+      allow read: if isCaregiverOrAdmin();
+      allow read: if isFamily() && isClientFamily(resource.data.clientId);
+      allow create, update: if isCaregiverOrAdmin();
+      allow delete: if isAdmin();
+    }
+
     // 通知集合
     match /notifications/{notificationId} {
       // 只能讀取自己的通知
@@ -206,19 +235,6 @@ service cloud.firestore {
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       // 可以刪除自己的通知
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    // 家屬聯絡紀錄集合
-    match /familyContacts/{contactId} {
-      // 照顧者和管理員可讀取所有聯絡紀錄
-      allow read: if isCaregiverOrAdmin();
-      // 家屬可讀取自己家人的聯絡紀錄
-      allow read: if isFamily() && isClientFamily(resource.data.clientId);
-
-      // 照顧者和管理員可以新增和更新
-      allow create, update: if isCaregiverOrAdmin();
-      // 只有管理員可以刪除
-      allow delete: if isAdmin();
     }
   }
 }
