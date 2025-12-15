@@ -873,8 +873,8 @@ const validateForm = () => {
   if (handoverForm.value.notifyUserIds.length === 0) {
     formErrors.value.notifyUsers = '請選擇至少一位通知人員';
   }
-  if (!handoverForm.value.content || handoverForm.value.content.trim().length < 10) {
-    formErrors.value.content = '交接事項至少需要10個字';
+  if (!handoverForm.value.content || handoverForm.value.content.trim().length === 0) {
+    formErrors.value.content = '請輸入交接事項';
   }
 
   return Object.keys(formErrors.value).length === 0;
