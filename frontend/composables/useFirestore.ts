@@ -22,6 +22,9 @@ export const useFirestore = () => {
   const getDocument = async (collectionName: string, docId: string) => {
     try {
       const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
       const docRef = doc($firestore, collectionName, docId);
       const docSnap = await getDoc(docRef);
 
@@ -42,6 +45,9 @@ export const useFirestore = () => {
   ) => {
     try {
       const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
       const collectionRef = collection($firestore, collectionName);
       const q =
         constraints.length > 0
@@ -63,6 +69,9 @@ export const useFirestore = () => {
   const addDocument = async (collectionName: string, data: any) => {
     try {
       const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
       const docRef = await addDoc(collection($firestore, collectionName), {
         ...data,
         createdAt: Timestamp.now(),
@@ -83,6 +92,9 @@ export const useFirestore = () => {
   ) => {
     try {
       const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
       const docRef = doc($firestore, collectionName, docId);
       await updateDoc(docRef, {
         ...data,
@@ -99,6 +111,9 @@ export const useFirestore = () => {
   const deleteDocument = async (collectionName: string, docId: string) => {
     try {
       const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
       const docRef = doc($firestore, collectionName, docId);
       await deleteDoc(docRef);
       return { success: true };
@@ -115,6 +130,9 @@ export const useFirestore = () => {
   ) => {
     try {
       const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
       const q = query(collection($firestore, collectionName), ...constraints);
       const querySnapshot = await getDocs(q);
 

@@ -229,7 +229,7 @@
             field="measuredAt"
             header="日期"
             sortable
-            style="min-width: 140px"
+            style="min-width: 120px"
           >
             <template #body="{ data }">
               <div class="flex items-center gap-2">
@@ -243,7 +243,7 @@
           <Column
             field="bloodPressure"
             header="血壓 (mmHg)"
-            style="min-width: 140px"
+            style="min-width: 100px"
           >
             <template #body="{ data }">
               <div :class="getCellClass(data, 'bloodPressure')">
@@ -254,7 +254,7 @@
           <Column
             field="heartRate"
             header="心率 (bpm)"
-            style="min-width: 110px"
+            style="min-width: 90px"
           >
             <template #body="{ data }">
               <div :class="getCellClass(data, 'heartRate')">
@@ -265,7 +265,7 @@
           <Column
             field="temperature"
             header="體溫 (°C)"
-            style="min-width: 110px"
+            style="min-width: 90px"
           >
             <template #body="{ data }">
               <div :class="getCellClass(data, 'temperature')">
@@ -276,7 +276,7 @@
           <Column
             field="bloodOxygen"
             header="血氧 (%)"
-            style="min-width: 110px"
+            style="min-width: 90px"
           >
             <template #body="{ data }">
               <div :class="getCellClass(data, 'bloodOxygen')">
@@ -287,7 +287,7 @@
           <Column
             field="bloodSugar"
             header="血糖 (mg/dL)"
-            style="min-width: 140px"
+            style="min-width: 110px"
           >
             <template #body="{ data }">
               <div :class="getCellClass(data, 'bloodSugar')">
@@ -295,7 +295,7 @@
               </div>
             </template>
           </Column>
-          <Column header="紀錄者" style="min-width: 150px">
+          <Column header="紀錄者" style="min-width: 100px">
             <template #body="{ data }">
               <div class="flex items-center gap-2 text-gray-600">
                 <i class="pi pi-user-edit text-sm"></i>
@@ -303,14 +303,14 @@
               </div>
             </template>
           </Column>
-          <Column header="備註" style="min-width: 240px">
+          <Column header="備註" style="min-width: 180px">
             <template #body="{ data }">
               <div class="text-sm text-gray-600 whitespace-pre-line">
                 {{ data.notes || "—" }}
               </div>
             </template>
           </Column>
-          <Column header="提醒" style="min-width: 160px">
+          <Column header="提醒" style="min-width: 120px">
             <template #body="{ data }">
               <div class="flex flex-wrap gap-2">
                 <Tag
