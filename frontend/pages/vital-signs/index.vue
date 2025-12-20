@@ -151,15 +151,11 @@
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
-            <Tag
-              value="體重"
-              style="background-color: #8b5cf6"
-              icon="pi pi-dot-fill"
-            />
-            <Tag value="收縮壓" severity="info" icon="pi pi-dot-fill" />
-            <Tag value="舒張壓" severity="secondary" icon="pi pi-dot-fill" />
-            <Tag value="脈搏" severity="success" icon="pi pi-dot-fill" />
-            <Tag value="血氧" severity="warning" icon="pi pi-dot-fill" />
+            <Tag value="體重" style="background-color: #ffff00" />
+            <Tag value="收縮壓" severity="info" />
+            <Tag value="舒張壓" severity="secondary" />
+            <Tag value="脈搏" severity="success" />
+            <Tag value="血氧" severity="warning" />
           </div>
         </div>
       </template>
@@ -782,7 +778,7 @@ const chartData = computed(() => {
       {
         label: "體重 (kg)",
         data: sortedRecordsAsc.value.map((record) => record.weight ?? null),
-        borderColor: "#8b5cf6",
+        borderColor: "#ffff00",
         backgroundColor: "rgba(139, 92, 246, 0.1)",
         tension: 0.4,
         fill: true,

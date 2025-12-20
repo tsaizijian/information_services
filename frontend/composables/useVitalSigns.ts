@@ -240,7 +240,11 @@ export const useVitalSigns = () => {
       systolic?: number | null;
       diastolic?: number | null;
       pulse?: number | null;
+      heartRate?: number | null;
+      temperature?: number | null;
       bloodOxygen?: number | null;
+      bloodSugar?: number | null;
+      notes?: string;
     },
     recordedBy?: { id?: string; name?: string }
   ) => {
@@ -251,8 +255,11 @@ export const useVitalSigns = () => {
       weight: record.weight ?? null,
       systolic: record.systolic ?? null,
       diastolic: record.diastolic ?? null,
-      pulse: record.pulse ?? null,
+      pulse: record.pulse ?? record.heartRate ?? null,
+      temperature: record.temperature ?? null,
       bloodOxygen: record.bloodOxygen ?? null,
+      bloodSugar: record.bloodSugar ?? null,
+      notes: record.notes ?? null,
       recordedBy: recordedBy?.id || userProfile.value?.id || null,
       recordedByName:
         recordedBy?.name || userProfile.value?.displayName || "未命名",
@@ -275,7 +282,11 @@ export const useVitalSigns = () => {
       systolic?: number | null;
       diastolic?: number | null;
       pulse?: number | null;
+      heartRate?: number | null;
+      temperature?: number | null;
       bloodOxygen?: number | null;
+      bloodSugar?: number | null;
+      notes?: string;
     }
   ) => {
     const data: any = {};
@@ -292,11 +303,20 @@ export const useVitalSigns = () => {
     if (record.diastolic !== undefined) {
       data.diastolic = record.diastolic;
     }
-    if (record.pulse !== undefined) {
-      data.pulse = record.pulse;
+    if (record.pulse !== undefined || record.heartRate !== undefined) {
+      data.pulse = record.pulse ?? record.heartRate;
+    }
+    if (record.temperature !== undefined) {
+      data.temperature = record.temperature;
     }
     if (record.bloodOxygen !== undefined) {
       data.bloodOxygen = record.bloodOxygen;
+    }
+    if (record.bloodSugar !== undefined) {
+      data.bloodSugar = record.bloodSugar;
+    }
+    if (record.notes !== undefined) {
+      data.notes = record.notes;
     }
 
     return await updateDocument("vitalSignRecords", recordId, data);

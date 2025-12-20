@@ -226,15 +226,15 @@
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-2">
                   <Tag
-                    :value="getRecordTypeLabel(record.recordType)"
-                    :severity="getRecordTypeSeverity(record.recordType)"
+                    :value="getRecordTypeLabel(record.type)"
+                    :severity="getRecordTypeSeverity(record.type)"
                     rounded
                   />
                   <span class="text-sm text-gray-600">
                     {{ record.clientName }}
                   </span>
                   <span class="text-xs text-gray-400">
-                    {{ formatDate(record.recordDate) }}
+                    {{ formatDate(record.date) }}
                   </span>
                 </div>
                 <p class="text-gray-700 line-clamp-2">{{ record.content }}</p>
@@ -346,7 +346,7 @@
                   text
                   rounded
                   @click="viewRecordDetail(record)"
-                  v-tooltip.left="'查看詳情'"
+                  v-tooltip.left="'查看內容'"
                 />
               </div>
             </div>
@@ -367,6 +367,202 @@
         </div>
       </template>
     </Card>
+
+    <!-- 記錄詳情 Dialog -->
+    <Dialog
+      v-model:visible="showDetailDialog"
+      :header="`記錄詳情 - ${selectedRecord?.clientName || ''}`"
+      :style="{ width: '50rem' }"
+      modal
+      :closable="true"
+    >
+      <div v-if="selectedRecord" class="space-y-4">
+        <!-- 基本資訊 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm text-gray-500">記錄類型</p>
+            <Tag
+              :value="getRecordTypeLabel(selectedRecord.type)"
+              :severity="getRecordTypeSeverity(selectedRecord.type)"
+              rounded
+            />
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">個案姓名</p>
+            <p class="font-semibold">{{ selectedRecord.clientName }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">記錄日期</p>
+            <p class="font-semibold">{{ formatDate(selectedRecord.date) }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">記錄者</p>
+            <p class="font-semibold">{{ selectedRecord.recordedByName }}</p>
+          </div>
+        </div>
+
+        <Divider />
+
+        <!-- 護理紀錄詳情 -->
+        <div v-if="selectedRecord.type === 'care'" class="space-y-3">
+          <div>
+            <p class="text-sm text-gray-500">護理內容</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content || selectedRecord.rawData.notes || '無' }}</p>
+          </div>
+          <div v-if="selectedRecord.rawData.vitalSigns">
+            <p class="text-sm text-gray-500 mb-2">生理徵象</p>
+            <div class="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded">
+              <div v-if="selectedRecord.rawData.vitalSigns.temperature">
+                <span class="text-xs text-gray-500">體溫:</span>
+                <span class="ml-2">{{ selectedRecord.rawData.vitalSigns.temperature }}°C</span>
+              </div>
+              <div v-if="selectedRecord.rawData.vitalSigns.heartRate">
+                <span class="text-xs text-gray-500">心跳:</span>
+                <span class="ml-2">{{ selectedRecord.rawData.vitalSigns.heartRate }} bpm</span>
+              </div>
+              <div v-if="selectedRecord.rawData.vitalSigns.bloodPressure">
+                <span class="text-xs text-gray-500">血壓:</span>
+                <span class="ml-2">{{ selectedRecord.rawData.vitalSigns.bloodPressure }}</span>
+              </div>
+              <div v-if="selectedRecord.rawData.vitalSigns.respiratoryRate">
+                <span class="text-xs text-gray-500">呼吸:</span>
+                <span class="ml-2">{{ selectedRecord.rawData.vitalSigns.respiratoryRate }} /min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 情緒紀錄詳情 -->
+        <div v-if="selectedRecord.type === 'emotion'" class="space-y-3">
+          <div>
+            <p class="text-sm text-gray-500">情境</p>
+            <p>{{ selectedRecord.rawData.context || '無' }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">症狀</p>
+            <div class="flex flex-wrap gap-2">
+              <Tag v-for="symptom in selectedRecord.rawData.symptoms" :key="symptom" :value="symptom" />
+            </div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">處置方式</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.intervention || '無' }}</p>
+          </div>
+        </div>
+
+        <!-- 解便紀錄詳情 -->
+        <div v-if="selectedRecord.type === 'bowel'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">解便量</p>
+              <p>{{ selectedRecord.rawData.amount || '無' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">顏色</p>
+              <p>{{ selectedRecord.rawData.color || '無' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">性質</p>
+              <p>{{ selectedRecord.rawData.consistency || '無' }}</p>
+            </div>
+          </div>
+          <div v-if="selectedRecord.rawData.notes">
+            <p class="text-sm text-gray-500">備註</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.notes }}</p>
+          </div>
+        </div>
+
+        <!-- 癲癇紀錄詳情 -->
+        <div v-if="selectedRecord.type === 'seizure'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">發作時長</p>
+              <p>{{ selectedRecord.rawData.durationSeconds }} 秒</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">意識狀態</p>
+              <p>{{ selectedRecord.rawData.consciousnessState || '無' }}</p>
+            </div>
+          </div>
+          <div v-if="selectedRecord.rawData.description">
+            <p class="text-sm text-gray-500">發作描述</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.description }}</p>
+          </div>
+          <div v-if="selectedRecord.rawData.intervention">
+            <p class="text-sm text-gray-500">處置方式</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.intervention }}</p>
+          </div>
+        </div>
+
+        <!-- 生理期紀錄詳情 -->
+        <div v-if="selectedRecord.type === 'menstrual'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">經血量</p>
+              <p>{{ selectedRecord.rawData.flowAmount || '無' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">疼痛程度</p>
+              <p>{{ selectedRecord.rawData.painLevel || '無' }}</p>
+            </div>
+          </div>
+          <div v-if="selectedRecord.rawData.notes">
+            <p class="text-sm text-gray-500">備註</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.notes }}</p>
+          </div>
+        </div>
+
+        <!-- 班務交接詳情 -->
+        <div v-if="selectedRecord.type === 'handover'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">班別</p>
+              <p>{{ getShiftLabel(selectedRecord.rawData.shiftType) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">優先級</p>
+              <Tag
+                :value="getPriorityMeta(selectedRecord.rawData.priority).label"
+                :severity="getPrioritySeverity(selectedRecord.rawData.priority)"
+                rounded
+              />
+            </div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">交接內容</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content }}</p>
+          </div>
+          <div v-if="selectedRecord.rawData.targetClients && selectedRecord.rawData.targetClients.length > 0">
+            <p class="text-sm text-gray-500">相關個案</p>
+            <div class="flex flex-wrap gap-2">
+              <Tag v-for="client in selectedRecord.rawData.targetClients" :key="client.clientId" :value="client.clientName" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 家屬聯絡詳情 -->
+        <div v-if="selectedRecord.type === 'familyContact'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">聯絡對象</p>
+              <p>{{ selectedRecord.rawData.contactTarget || '無' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">聯絡方式</p>
+              <p>{{ selectedRecord.rawData.contactMethod || '無' }}</p>
+            </div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">聯絡內容</p>
+            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content }}</p>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="關閉" icon="pi pi-times" @click="showDetailDialog = false" text />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -407,6 +603,10 @@ const stats = ref({
 const allRecords = ref<any[]>([]);
 const pinnedRecords = ref<any[]>([]);
 const pendingHandovers = ref<any[]>([]);
+
+// 詳情 Dialog 狀態
+const showDetailDialog = ref(false);
+const selectedRecord = ref<any>(null);
 
 // 搜尋和篩選狀態
 const searchQuery = ref("");
@@ -788,12 +988,8 @@ const getRecordTypeSeverity = (type: string) => {
 
 // 查看紀錄詳情
 const viewRecordDetail = (record: any) => {
-  // 根據記錄類型導航到相應頁面
-  if (record.type === "care") {
-    navigateTo(`/records`);
-  } else {
-    navigateTo(`/clients/${record.clientId}`);
-  }
+  selectedRecord.value = record;
+  showDetailDialog.value = true;
 };
 
 // 切換釘選狀態
@@ -856,6 +1052,7 @@ onMounted(() => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

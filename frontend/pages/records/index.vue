@@ -659,7 +659,6 @@
 
 <script setup lang="ts">
 import * as v from "valibot";
-import dayjs from "dayjs";
 import { useToast } from "primevue/usetoast";
 
 definePageMeta({
@@ -1088,6 +1087,7 @@ const exportToWord = async (selectedClientIds: string[]) => {
         new Paragraph({
           children: [
             new ImageRun({
+              type: 'png',
               data: logoNameImage,
               transformation: {
                 width: 300,
@@ -1099,9 +1099,10 @@ const exportToWord = async (selectedClientIds: string[]) => {
           spacing: { after: 200 }
         }),
         new Paragraph({
-          text: "護理紀錄單",
+          children: [
+            new TextRun({ text: "護理紀錄單", bold: true })
+          ],
           alignment: AlignmentType.CENTER,
-          bold: true,
           spacing: { after: 300 }
         })
       );
@@ -1119,10 +1120,11 @@ const exportToWord = async (selectedClientIds: string[]) => {
           spacing: { after: 200 }
         }),
         new Paragraph({
-          text: "護理紀錄單",
+          children: [
+            new TextRun({ text: "護理紀錄單", bold: true })
+          ],
           alignment: AlignmentType.CENTER,
-          spacing: { after: 300 },
-          bold: true
+          spacing: { after: 300 }
         })
       );
     }

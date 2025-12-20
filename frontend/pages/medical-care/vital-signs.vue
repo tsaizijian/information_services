@@ -208,7 +208,6 @@ import { useToast } from 'primevue/usetoast';
 definePageMeta({ layout: 'default', middleware: ['auth'] });
 
 const toast = useToast();
-const { userProfile } = useAuth();
 const { fetchClients, clients: allClients } = useClients();
 const { getVitalSignRecords, createVitalSignRecord, removeVitalSignRecord } = useVitalSigns();
 
@@ -404,10 +403,12 @@ const exportYearlyReport = async () => {
                 const base64data = reader.result as string;
                 if (base64data) {
                     const base64Content = base64data.split(',')[1];
-                    doc.addFileToVFS('NotoSansTC-Regular.ttf', base64Content);
-                    doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
-                    doc.setFont('NotoSansTC');
-                    fontLoaded = true;
+                    if (base64Content) {
+                        doc.addFileToVFS('NotoSansTC-Regular.ttf', base64Content);
+                        doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
+                        doc.setFont('NotoSansTC');
+                        fontLoaded = true;
+                    }
                 }
                 resolve(null);
             };
@@ -474,7 +475,7 @@ const exportYearlyReport = async () => {
         0: { cellWidth: 20 },
         5: { cellWidth: 30 }
       },
-      didDrawPage: (data) => {
+      didDrawPage: () => {
         // Footer note
         doc.setFontSize(10);
         doc.text("※備註：正常血壓-收縮壓 90-140mmHg  舒張壓 50-90 mmHg", 105, doc.internal.pageSize.height - 20, { align: "center" });
