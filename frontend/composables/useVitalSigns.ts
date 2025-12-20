@@ -236,13 +236,11 @@ export const useVitalSigns = () => {
       clientId: string;
       clientName: string;
       measuredAt: Date;
+      weight?: number | null;
       systolic?: number | null;
       diastolic?: number | null;
-      heartRate?: number | null;
-      temperature?: number | null;
+      pulse?: number | null;
       bloodOxygen?: number | null;
-      bloodSugar?: number | null;
-      notes?: string | null;
     },
     recordedBy?: { id?: string; name?: string }
   ) => {
@@ -250,13 +248,11 @@ export const useVitalSigns = () => {
       clientId: record.clientId,
       clientName: record.clientName,
       measuredAt: Timestamp.fromDate(record.measuredAt),
+      weight: record.weight ?? null,
       systolic: record.systolic ?? null,
       diastolic: record.diastolic ?? null,
-      heartRate: record.heartRate ?? null,
-      temperature: record.temperature ?? null,
+      pulse: record.pulse ?? null,
       bloodOxygen: record.bloodOxygen ?? null,
-      bloodSugar: record.bloodSugar ?? null,
-      notes: record.notes ?? "",
       recordedBy: recordedBy?.id || userProfile.value?.id || null,
       recordedByName:
         recordedBy?.name || userProfile.value?.displayName || "未命名",
@@ -270,6 +266,42 @@ export const useVitalSigns = () => {
     return await deleteDocument("vitalSignRecords", recordId);
   };
 
+  // 更新生命徵象記錄
+  const updateVitalSignRecord = async (
+    recordId: string,
+    record: {
+      measuredAt?: Date;
+      weight?: number | null;
+      systolic?: number | null;
+      diastolic?: number | null;
+      pulse?: number | null;
+      bloodOxygen?: number | null;
+    }
+  ) => {
+    const data: any = {};
+
+    if (record.measuredAt) {
+      data.measuredAt = Timestamp.fromDate(record.measuredAt);
+    }
+    if (record.weight !== undefined) {
+      data.weight = record.weight;
+    }
+    if (record.systolic !== undefined) {
+      data.systolic = record.systolic;
+    }
+    if (record.diastolic !== undefined) {
+      data.diastolic = record.diastolic;
+    }
+    if (record.pulse !== undefined) {
+      data.pulse = record.pulse;
+    }
+    if (record.bloodOxygen !== undefined) {
+      data.bloodOxygen = record.bloodOxygen;
+    }
+
+    return await updateDocument("vitalSignRecords", recordId, data);
+  };
+
   return {
     getYearlyVitalSigns,
     saveMonthlyVitalSign,
@@ -279,5 +311,6 @@ export const useVitalSigns = () => {
     getVitalSignRecords,
     createVitalSignRecord,
     removeVitalSignRecord,
+    updateVitalSignRecord,
   };
 };

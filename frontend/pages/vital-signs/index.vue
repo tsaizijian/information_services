@@ -22,19 +22,11 @@
           @click="openThresholdDialog"
         />
         <Button
-          label="匯出 PDF"
-          icon="pi pi-file-pdf"
-          severity="danger"
+          label="匯出 Word"
+          icon="pi pi-file-word"
+          severity="info"
           outlined
-          @click="exportPdf"
-          :disabled="records.length === 0"
-        />
-        <Button
-          label="匯出 Excel"
-          icon="pi pi-file-excel"
-          severity="success"
-          outlined
-          @click="exportExcel"
+          @click="exportWord"
           :disabled="records.length === 0"
         />
         <Button
@@ -159,11 +151,15 @@
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
+            <Tag
+              value="體重"
+              style="background-color: #8b5cf6"
+              icon="pi pi-dot-fill"
+            />
             <Tag value="收縮壓" severity="info" icon="pi pi-dot-fill" />
             <Tag value="舒張壓" severity="secondary" icon="pi pi-dot-fill" />
-            <Tag value="心率" severity="success" icon="pi pi-dot-fill" />
+            <Tag value="脈搏" severity="success" icon="pi pi-dot-fill" />
             <Tag value="血氧" severity="warning" icon="pi pi-dot-fill" />
-            <Tag value="體溫" severity="danger" icon="pi pi-dot-fill" />
           </div>
         </div>
       </template>
@@ -240,10 +236,17 @@
               </div>
             </template>
           </Column>
+          <Column field="weight" header="體重 (kg)" style="min-width: 110px">
+            <template #body="{ data }">
+              <div class="text-gray-700">
+                {{ formatValue(data.weight, " kg", 1) }}
+              </div>
+            </template>
+          </Column>
           <Column
             field="bloodPressure"
             header="血壓 (mmHg)"
-            style="min-width: 100px"
+            style="min-width: 140px"
           >
             <template #body="{ data }">
               <div :class="getCellClass(data, 'bloodPressure')">
@@ -251,51 +254,21 @@
               </div>
             </template>
           </Column>
-          <Column
-            field="heartRate"
-            header="心率 (bpm)"
-            style="min-width: 90px"
-          >
+          <Column field="pulse" header="脈搏 (次/分)" style="min-width: 120px">
             <template #body="{ data }">
-              <div :class="getCellClass(data, 'heartRate')">
-                {{ formatValue(data.heartRate, " bpm") }}
+              <div :class="getCellClass(data, 'pulse')">
+                {{ formatValue(data.pulse, " 次/分") }}
               </div>
             </template>
           </Column>
-          <Column
-            field="temperature"
-            header="體溫 (°C)"
-            style="min-width: 90px"
-          >
-            <template #body="{ data }">
-              <div :class="getCellClass(data, 'temperature')">
-                {{ formatValue(data.temperature, " °C", 1) }}
-              </div>
-            </template>
-          </Column>
-          <Column
-            field="bloodOxygen"
-            header="血氧 (%)"
-            style="min-width: 90px"
-          >
+          <Column field="bloodOxygen" header="血氧 (%)" style="min-width: 90px">
             <template #body="{ data }">
               <div :class="getCellClass(data, 'bloodOxygen')">
                 {{ formatValue(data.bloodOxygen, " %") }}
               </div>
             </template>
           </Column>
-          <Column
-            field="bloodSugar"
-            header="血糖 (mg/dL)"
-            style="min-width: 110px"
-          >
-            <template #body="{ data }">
-              <div :class="getCellClass(data, 'bloodSugar')">
-                {{ formatValue(data.bloodSugar, " mg/dL") }}
-              </div>
-            </template>
-          </Column>
-          <Column header="紀錄者" style="min-width: 100px">
+          <Column header="紀錄者" style="min-width: 150px">
             <template #body="{ data }">
               <div class="flex items-center gap-2 text-gray-600">
                 <i class="pi pi-user-edit text-sm"></i>
@@ -303,14 +276,7 @@
               </div>
             </template>
           </Column>
-          <Column header="備註" style="min-width: 180px">
-            <template #body="{ data }">
-              <div class="text-sm text-gray-600 whitespace-pre-line">
-                {{ data.notes || "—" }}
-              </div>
-            </template>
-          </Column>
-          <Column header="提醒" style="min-width: 120px">
+          <Column header="提醒" style="min-width: 160px">
             <template #body="{ data }">
               <div class="flex flex-wrap gap-2">
                 <Tag
@@ -329,6 +295,30 @@
                   severity="success"
                   icon="pi pi-check"
                   rounded
+                />
+              </div>
+            </template>
+          </Column>
+          <Column header="操作" style="min-width: 120px">
+            <template #body="{ data }">
+              <div class="flex gap-2">
+                <Button
+                  icon="pi pi-pencil"
+                  size="small"
+                  severity="info"
+                  text
+                  rounded
+                  @click="openEditDialog(data)"
+                  v-tooltip.top="'修改'"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  size="small"
+                  severity="danger"
+                  text
+                  rounded
+                  @click="confirmDelete(data)"
+                  v-tooltip.top="'刪除'"
                 />
               </div>
             </template>
@@ -382,7 +372,16 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="text-sm font-medium text-gray-600">體重 (kg)</label>
+            <InputText
+              v-model="form.weight"
+              type="number"
+              step="0.1"
+              placeholder="例如 65.5"
+            />
+          </div>
           <div>
             <label class="text-sm font-medium text-gray-600"
               >收縮壓 (mmHg)</label
@@ -405,22 +404,15 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="text-sm font-medium text-gray-600">心率 (bpm)</label>
+            <label class="text-sm font-medium text-gray-600"
+              >脈搏 (次/分)</label
+            >
             <InputText
-              v-model="form.heartRate"
+              v-model="form.pulse"
               type="number"
               placeholder="例如 72"
-            />
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600">體溫 (°C)</label>
-            <InputText
-              v-model="form.temperature"
-              type="number"
-              step="0.1"
-              placeholder="例如 36.6"
             />
           </div>
           <div>
@@ -429,27 +421,6 @@
               v-model="form.bloodOxygen"
               type="number"
               placeholder="例如 98"
-            />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-600"
-              >血糖 (mg/dL)</label
-            >
-            <InputText
-              v-model="form.bloodSugar"
-              type="number"
-              placeholder="可留空"
-            />
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600">備註</label>
-            <Textarea
-              v-model="form.notes"
-              rows="3"
-              placeholder="任何補充說明..."
             />
           </div>
         </div>
@@ -564,67 +535,33 @@
             <p
               class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
             >
-              <i class="pi pi-heart text-red-500"></i>
-              心率 / 體溫
+              <i class="pi pi-heart text-green-500"></i>
+              脈搏
             </p>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="text-xs text-gray-500">心率最小值</label>
+                <label class="text-xs text-gray-500">脈搏最小值</label>
                 <InputText
-                  v-model="thresholdForm.heartRateMin"
+                  v-model="thresholdForm.pulseMin"
                   type="number"
                   class="w-full"
-                  :invalid="!!thresholdErrors.heartRateMin"
+                  :invalid="!!thresholdErrors.pulseMin"
                 />
-                <small
-                  v-if="thresholdErrors.heartRateMin"
-                  class="text-red-500"
-                  >{{ thresholdErrors.heartRateMin }}</small
-                >
+                <small v-if="thresholdErrors.pulseMin" class="text-red-500">{{
+                  thresholdErrors.pulseMin
+                }}</small>
               </div>
               <div>
-                <label class="text-xs text-gray-500">心率最大值</label>
+                <label class="text-xs text-gray-500">脈搏最大值</label>
                 <InputText
-                  v-model="thresholdForm.heartRateMax"
+                  v-model="thresholdForm.pulseMax"
                   type="number"
                   class="w-full"
-                  :invalid="!!thresholdErrors.heartRateMax"
+                  :invalid="!!thresholdErrors.pulseMax"
                 />
-                <small
-                  v-if="thresholdErrors.heartRateMax"
-                  class="text-red-500"
-                  >{{ thresholdErrors.heartRateMax }}</small
-                >
-              </div>
-              <div>
-                <label class="text-xs text-gray-500">體溫最小值</label>
-                <InputText
-                  v-model="thresholdForm.temperatureMin"
-                  type="number"
-                  step="0.1"
-                  class="w-full"
-                  :invalid="!!thresholdErrors.temperatureMin"
-                />
-                <small
-                  v-if="thresholdErrors.temperatureMin"
-                  class="text-red-500"
-                  >{{ thresholdErrors.temperatureMin }}</small
-                >
-              </div>
-              <div>
-                <label class="text-xs text-gray-500">體溫最大值</label>
-                <InputText
-                  v-model="thresholdForm.temperatureMax"
-                  type="number"
-                  step="0.1"
-                  class="w-full"
-                  :invalid="!!thresholdErrors.temperatureMax"
-                />
-                <small
-                  v-if="thresholdErrors.temperatureMax"
-                  class="text-red-500"
-                  >{{ thresholdErrors.temperatureMax }}</small
-                >
+                <small v-if="thresholdErrors.pulseMax" class="text-red-500">{{
+                  thresholdErrors.pulseMax
+                }}</small>
               </div>
             </div>
           </div>
@@ -634,7 +571,7 @@
               class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
             >
               <i class="pi pi-percentage text-orange-500"></i>
-              血氧 / 血糖
+              血氧
             </p>
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -663,34 +600,6 @@
                   v-if="thresholdErrors.bloodOxygenMax"
                   class="text-red-500"
                   >{{ thresholdErrors.bloodOxygenMax }}</small
-                >
-              </div>
-              <div>
-                <label class="text-xs text-gray-500">血糖最小值</label>
-                <InputText
-                  v-model="thresholdForm.bloodSugarMin"
-                  type="number"
-                  class="w-full"
-                  :invalid="!!thresholdErrors.bloodSugarMin"
-                />
-                <small
-                  v-if="thresholdErrors.bloodSugarMin"
-                  class="text-red-500"
-                  >{{ thresholdErrors.bloodSugarMin }}</small
-                >
-              </div>
-              <div>
-                <label class="text-xs text-gray-500">血糖最大值</label>
-                <InputText
-                  v-model="thresholdForm.bloodSugarMax"
-                  type="number"
-                  class="w-full"
-                  :invalid="!!thresholdErrors.bloodSugarMax"
-                />
-                <small
-                  v-if="thresholdErrors.bloodSugarMax"
-                  class="text-red-500"
-                  >{{ thresholdErrors.bloodSugarMax }}</small
                 >
               </div>
             </div>
@@ -733,9 +642,7 @@ import {
   Legend,
 } from "chart.js";
 import { useToast } from "primevue/usetoast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { useConfirm } from "primevue/useconfirm";
 ChartJS.register(
   LineElement,
   PointElement,
@@ -753,8 +660,15 @@ definePageMeta({
 
 const { toDate: toDateUtil } = useUtils();
 const toast = useToast();
+const confirm = useConfirm();
 const { fetchClients, clients } = useClients();
-const { getVitalSignRecords, createVitalSignRecord } = useVitalSigns();
+const {
+  getVitalSignRecords,
+  createVitalSignRecord,
+  updateVitalSignRecord,
+  removeVitalSignRecord,
+} = useVitalSigns();
+const { exportVitalSignsToWord } = useExport();
 
 const selectedClientId = ref<string | null>(null);
 const selectedRange = ref("30");
@@ -763,29 +677,26 @@ const customEndDate = ref<Date | null>(null);
 
 const records = ref<any[]>([]);
 const loadingRecords = ref(false);
+const editingRecord = ref<any>(null);
 
 const showDialog = ref(false);
 const saving = ref(false);
 const form = reactive({
   clientId: "",
   measuredAt: new Date(),
+  weight: null as string | null,
   systolic: null as string | null,
   diastolic: null as string | null,
-  heartRate: null as string | null,
-  temperature: null as string | null,
+  pulse: null as string | null,
   bloodOxygen: null as string | null,
-  bloodSugar: null as string | null,
-  notes: "",
 });
 const formErrors = reactive<Record<string, string>>({});
 
 const thresholds = reactive({
   systolic: { min: 90, max: 140 },
   diastolic: { min: 60, max: 90 },
-  heartRate: { min: 60, max: 100 },
-  temperature: { min: 36, max: 37.5 },
+  pulse: { min: 60, max: 100 },
   bloodOxygen: { min: 95, max: 100 },
-  bloodSugar: { min: 70, max: 140 },
 });
 
 const thresholdForm = reactive({
@@ -793,24 +704,18 @@ const thresholdForm = reactive({
   systolicMax: String(thresholds.systolic.max),
   diastolicMin: String(thresholds.diastolic.min),
   diastolicMax: String(thresholds.diastolic.max),
-  heartRateMin: String(thresholds.heartRate.min),
-  heartRateMax: String(thresholds.heartRate.max),
-  temperatureMin: String(thresholds.temperature.min),
-  temperatureMax: String(thresholds.temperature.max),
+  pulseMin: String(thresholds.pulse.min),
+  pulseMax: String(thresholds.pulse.max),
   bloodOxygenMin: String(thresholds.bloodOxygen.min),
   bloodOxygenMax: String(thresholds.bloodOxygen.max),
-  bloodSugarMin: String(thresholds.bloodSugar.min),
-  bloodSugarMax: String(thresholds.bloodSugar.max),
 });
 const thresholdErrors = reactive<Record<string, string>>({});
 const showThresholdDialog = ref(false);
 
 const metricLabels: Record<string, string> = {
   bloodPressure: "血壓",
-  heartRate: "心率",
-  temperature: "體溫",
+  pulse: "脈搏",
   bloodOxygen: "血氧",
-  bloodSugar: "血糖",
 };
 
 const rangeOptions = [
@@ -875,6 +780,15 @@ const chartData = computed(() => {
     labels,
     datasets: [
       {
+        label: "體重 (kg)",
+        data: sortedRecordsAsc.value.map((record) => record.weight ?? null),
+        borderColor: "#8b5cf6",
+        backgroundColor: "rgba(139, 92, 246, 0.1)",
+        tension: 0.4,
+        fill: true,
+        spanGaps: true,
+      },
+      {
         label: "收縮壓 (mmHg)",
         data: sortedRecordsAsc.value.map((record) => record.systolic ?? null),
         borderColor: "#2563eb",
@@ -893,8 +807,8 @@ const chartData = computed(() => {
         spanGaps: true,
       },
       {
-        label: "心率 (bpm)",
-        data: sortedRecordsAsc.value.map((record) => record.heartRate ?? null),
+        label: "脈搏 (次/分)",
+        data: sortedRecordsAsc.value.map((record) => record.pulse ?? null),
         borderColor: "#16a34a",
         backgroundColor: "rgba(22, 163, 74, 0.1)",
         tension: 0.4,
@@ -908,17 +822,6 @@ const chartData = computed(() => {
         ),
         borderColor: "#f97316",
         backgroundColor: "rgba(249, 115, 22, 0.1)",
-        tension: 0.4,
-        fill: true,
-        spanGaps: true,
-      },
-      {
-        label: "體溫 (°C)",
-        data: sortedRecordsAsc.value.map(
-          (record) => record.temperature ?? null
-        ),
-        borderColor: "#ef4444",
-        backgroundColor: "rgba(239, 68, 68, 0.1)",
         tension: 0.4,
         fill: true,
         spanGaps: true,
@@ -986,10 +889,10 @@ const rangeSummary = computed(() => {
 const latestMeasurementText = computed(() => {
   if (!latestRecord.value) return "—";
   const date = dayjs(latestRecord.value.measuredAt).format("MM/DD HH:mm");
-  const heartRate = formatValue(latestRecord.value.heartRate, " bpm");
-  const temperature = formatValue(latestRecord.value.temperature, " °C", 1);
+  const weight = formatValue(latestRecord.value.weight, " kg", 1);
+  const pulse = formatValue(latestRecord.value.pulse, " 次/分");
   const oxygen = formatValue(latestRecord.value.bloodOxygen, "%");
-  return `${date} · 心率 ${heartRate} · 體溫 ${temperature} · 血氧 ${oxygen}`;
+  return `${date} · 體重 ${weight} · 脈搏 ${pulse} · 血氧 ${oxygen}`;
 });
 
 const abnormalCount = computed(
@@ -1041,21 +944,11 @@ const abnormalMetrics = (record: any) => {
   }
 
   if (
-    record.heartRate !== null &&
-    record.heartRate !== undefined &&
-    (record.heartRate < thresholds.heartRate.min ||
-      record.heartRate > thresholds.heartRate.max)
+    record.pulse !== null &&
+    record.pulse !== undefined &&
+    (record.pulse < thresholds.pulse.min || record.pulse > thresholds.pulse.max)
   ) {
-    result.push("heartRate");
-  }
-
-  if (
-    record.temperature !== null &&
-    record.temperature !== undefined &&
-    (record.temperature < thresholds.temperature.min ||
-      record.temperature > thresholds.temperature.max)
-  ) {
-    result.push("temperature");
+    result.push("pulse");
   }
 
   if (
@@ -1065,15 +958,6 @@ const abnormalMetrics = (record: any) => {
       record.bloodOxygen > thresholds.bloodOxygen.max)
   ) {
     result.push("bloodOxygen");
-  }
-
-  if (
-    record.bloodSugar !== null &&
-    record.bloodSugar !== undefined &&
-    (record.bloodSugar < thresholds.bloodSugar.min ||
-      record.bloodSugar > thresholds.bloodSugar.max)
-  ) {
-    result.push("bloodSugar");
   }
 
   return result;
@@ -1107,19 +991,66 @@ const loadRecords = async () => {
 };
 
 const openCreateDialog = () => {
+  editingRecord.value = null;
   Object.assign(form, {
     clientId: selectedClientId.value || "",
     measuredAt: new Date(),
+    weight: null,
     systolic: null,
     diastolic: null,
-    heartRate: null,
-    temperature: null,
+    pulse: null,
     bloodOxygen: null,
-    bloodSugar: null,
-    notes: "",
   });
   Object.keys(formErrors).forEach((key) => (formErrors[key] = ""));
   showDialog.value = true;
+};
+
+const openEditDialog = (record: any) => {
+  editingRecord.value = record;
+  Object.assign(form, {
+    clientId: record.clientId,
+    measuredAt: toDateUtil(record.measuredAt),
+    weight: record.weight ? String(record.weight) : null,
+    systolic: record.systolic ? String(record.systolic) : null,
+    diastolic: record.diastolic ? String(record.diastolic) : null,
+    pulse: record.pulse ? String(record.pulse) : null,
+    bloodOxygen: record.bloodOxygen ? String(record.bloodOxygen) : null,
+  });
+  Object.keys(formErrors).forEach((key) => (formErrors[key] = ""));
+  showDialog.value = true;
+};
+
+const confirmDelete = (record: any) => {
+  confirm.require({
+    message: `確定要刪除 ${dayjs(record.measuredAt).format(
+      "YYYY/MM/DD HH:mm"
+    )} 的記錄嗎？`,
+    header: "確認刪除",
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "確定刪除",
+    rejectLabel: "取消",
+    acceptClass: "p-button-danger",
+    accept: async () => {
+      try {
+        await removeVitalSignRecord(record.id);
+        toast.add({
+          severity: "success",
+          summary: "刪除成功",
+          detail: "生命徵象記錄已刪除",
+          life: 2500,
+        });
+        await loadRecords();
+      } catch (error) {
+        console.error("Failed to delete vital sign record:", error);
+        toast.add({
+          severity: "error",
+          summary: "刪除失敗",
+          detail: "無法刪除生命徵象記錄，請稍後再試。",
+          life: 3000,
+        });
+      }
+    },
+  });
 };
 
 const closeDialog = () => {
@@ -1132,14 +1063,10 @@ const openThresholdDialog = () => {
     systolicMax: thresholds.systolic.max,
     diastolicMin: thresholds.diastolic.min,
     diastolicMax: thresholds.diastolic.max,
-    heartRateMin: thresholds.heartRate.min,
-    heartRateMax: thresholds.heartRate.max,
-    temperatureMin: thresholds.temperature.min,
-    temperatureMax: thresholds.temperature.max,
+    pulseMin: thresholds.pulse.min,
+    pulseMax: thresholds.pulse.max,
     bloodOxygenMin: thresholds.bloodOxygen.min,
     bloodOxygenMax: thresholds.bloodOxygen.max,
-    bloodSugarMin: thresholds.bloodSugar.min,
-    bloodSugarMax: thresholds.bloodSugar.max,
   });
   Object.keys(thresholdErrors).forEach((key) => (thresholdErrors[key] = ""));
   showThresholdDialog.value = true;
@@ -1165,24 +1092,14 @@ const saveThresholds = () => {
       toNumeric(thresholdForm.diastolicMax),
     ],
     [
-      "heartRate",
-      toNumeric(thresholdForm.heartRateMin),
-      toNumeric(thresholdForm.heartRateMax),
-    ],
-    [
-      "temperature",
-      toNumeric(thresholdForm.temperatureMin),
-      toNumeric(thresholdForm.temperatureMax),
+      "pulse",
+      toNumeric(thresholdForm.pulseMin),
+      toNumeric(thresholdForm.pulseMax),
     ],
     [
       "bloodOxygen",
       toNumeric(thresholdForm.bloodOxygenMin),
       toNumeric(thresholdForm.bloodOxygenMax),
-    ],
-    [
-      "bloodSugar",
-      toNumeric(thresholdForm.bloodSugarMin),
-      toNumeric(thresholdForm.bloodSugarMax),
     ],
   ];
 
@@ -1229,12 +1146,11 @@ const validateForm = () => {
   }
 
   const hasMeasurement =
+    form.weight ||
     form.systolic ||
     form.diastolic ||
-    form.heartRate ||
-    form.temperature ||
-    form.bloodOxygen ||
-    form.bloodSugar;
+    form.pulse ||
+    form.bloodOxygen;
 
   if (!hasMeasurement) {
     formErrors.measurement = "至少填寫一項測量數據";
@@ -1250,34 +1166,54 @@ const submitForm = async () => {
   try {
     const client = clients.value.find((item: any) => item.id === form.clientId);
 
-    await createVitalSignRecord({
-      clientId: form.clientId,
-      clientName: client?.name || "",
-      measuredAt: form.measuredAt,
-      systolic: form.systolic ? Number(form.systolic) : null,
-      diastolic: form.diastolic ? Number(form.diastolic) : null,
-      heartRate: form.heartRate ? Number(form.heartRate) : null,
-      temperature: form.temperature ? Number(form.temperature) : null,
-      bloodOxygen: form.bloodOxygen ? Number(form.bloodOxygen) : null,
-      bloodSugar: form.bloodSugar ? Number(form.bloodSugar) : null,
-      notes: form.notes,
-    });
+    if (editingRecord.value) {
+      // 更新記錄
+      await updateVitalSignRecord(editingRecord.value.id, {
+        measuredAt: form.measuredAt,
+        weight: form.weight ? Number(form.weight) : null,
+        systolic: form.systolic ? Number(form.systolic) : null,
+        diastolic: form.diastolic ? Number(form.diastolic) : null,
+        pulse: form.pulse ? Number(form.pulse) : null,
+        bloodOxygen: form.bloodOxygen ? Number(form.bloodOxygen) : null,
+      });
 
-    toast.add({
-      severity: "success",
-      summary: "新增成功",
-      detail: "生命徵象紀錄已新增",
-      life: 2500,
-    });
+      toast.add({
+        severity: "success",
+        summary: "修改成功",
+        detail: "生命徵象紀錄已更新",
+        life: 2500,
+      });
+    } else {
+      // 新增記錄
+      await createVitalSignRecord({
+        clientId: form.clientId,
+        clientName: client?.name || "",
+        measuredAt: form.measuredAt,
+        weight: form.weight ? Number(form.weight) : null,
+        systolic: form.systolic ? Number(form.systolic) : null,
+        diastolic: form.diastolic ? Number(form.diastolic) : null,
+        pulse: form.pulse ? Number(form.pulse) : null,
+        bloodOxygen: form.bloodOxygen ? Number(form.bloodOxygen) : null,
+      });
+
+      toast.add({
+        severity: "success",
+        summary: "新增成功",
+        detail: "生命徵象紀錄已新增",
+        life: 2500,
+      });
+    }
 
     showDialog.value = false;
     await loadRecords();
   } catch (error) {
-    console.error("Failed to create vital sign record:", error);
+    console.error("Failed to save vital sign record:", error);
     toast.add({
       severity: "error",
-      summary: "新增失敗",
-      detail: "無法新增生命徵象紀錄，請稍後再試。",
+      summary: editingRecord.value ? "修改失敗" : "新增失敗",
+      detail: `無法${
+        editingRecord.value ? "修改" : "新增"
+      }生命徵象紀錄，請稍後再試。`,
       life: 3000,
     });
   } finally {
@@ -1285,70 +1221,62 @@ const submitForm = async () => {
   }
 };
 
-const exportExcel = () => {
-  if (records.value.length === 0) return;
-  const data = records.value.map((record) => ({
-    日期: dayjs(record.measuredAt).format("YYYY/MM/DD"),
-    時間: dayjs(record.measuredAt).format("HH:mm"),
-    "血壓 (mmHg)": formatBloodPressure(record),
-    "心率 (bpm)": record.heartRate ?? "",
-    "體溫 (°C)": record.temperature ?? "",
-    "血氧 (%)": record.bloodOxygen ?? "",
-    "血糖 (mg/dL)": record.bloodSugar ?? "",
-    備註: record.notes || "",
-    紀錄者: record.recordedByName || "",
-  }));
+const exportWord = async () => {
+  if (!selectedClientId.value) {
+    toast.add({
+      severity: "warn",
+      summary: "請選擇個案",
+      detail: "請先選擇要匯出的個案",
+      life: 3000,
+    });
+    return;
+  }
 
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "生命徵象紀錄");
+  const client = clients.value.find(
+    (c: any) => c.id === selectedClientId.value
+  );
+  if (!client) {
+    toast.add({
+      severity: "error",
+      summary: "找不到個案",
+      detail: "無法找到所選個案的資料",
+      life: 3000,
+    });
+    return;
+  }
 
-  const fileName = `生命徵象_${dayjs().format("YYYYMMDD_HHmm")}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
-};
-
-const exportPdf = () => {
-  if (records.value.length === 0) return;
-
-  const doc = new jsPDF();
-  const title = "生命徵象紀錄";
-  doc.setFontSize(16);
-  doc.text(title, 14, 18);
-
-  autoTable(doc, {
-    startY: 24,
-    head: [
-      [
-        "日期",
-        "時間",
-        "血壓 (mmHg)",
-        "心率 (bpm)",
-        "體溫 (°C)",
-        "血氧 (%)",
-        "血糖 (mg/dL)",
-        "備註",
-      ],
-    ],
-    body: records.value.map((record) => [
-      dayjs(record.measuredAt).format("YYYY/MM/DD"),
-      dayjs(record.measuredAt).format("HH:mm"),
-      formatBloodPressure(record),
-      record.heartRate ?? "",
-      record.temperature ?? "",
-      record.bloodOxygen ?? "",
-      record.bloodSugar ?? "",
-      record.notes || "",
-    ]),
-    styles: {
-      fontSize: 10,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [59, 130, 246],
-    },
+  toast.add({
+    severity: "info",
+    summary: "準備匯出中",
+    detail: "正在產生 Word 文件，請稍候...",
+    life: 3000,
   });
 
-  doc.save(`生命徵象_${dayjs().format("YYYYMMDD_HHmm")}.pdf`);
+  try {
+    const currentYear = dayjs().year();
+    await exportVitalSignsToWord(
+      selectedClientId.value,
+      client.name,
+      currentYear,
+      client.gender,
+      client.normalBloodPressure
+    );
+
+    toast.add({
+      severity: "success",
+      summary: "匯出成功",
+      detail: `已下載生命徵象紀錄表`,
+      life: 3000,
+    });
+  } catch (error) {
+    console.error("Word 匯出失敗:", error);
+    toast.add({
+      severity: "error",
+      summary: "匯出失敗",
+      detail: "無法產生 Word 檔案，請稍後再試",
+      life: 5000,
+    });
+  }
 };
 
 watch(
