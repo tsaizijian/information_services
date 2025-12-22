@@ -10,7 +10,7 @@
       </div>
 
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div
           class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500"
         >
@@ -37,20 +37,6 @@
             </div>
             <div class="bg-green-100 p-4 rounded-full">
               <i class="pi pi-users text-green-600 text-2xl"></i>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-600 text-sm mb-1">家屬</p>
-              <p class="text-3xl font-bold text-gray-800">{{ stats.family }}</p>
-            </div>
-            <div class="bg-purple-100 p-4 rounded-full">
-              <i class="pi pi-heart text-purple-600 text-2xl"></i>
             </div>
           </div>
         </div>
@@ -328,7 +314,7 @@ interface User {
   email: string;
   displayName: string;
   phone?: string;
-  role: "admin" | "caregiver" | "family";
+  role: "admin" | "caregiver";
   isActive: boolean;
   createdAt: any;
   updatedAt: any;
@@ -355,7 +341,6 @@ const roleFilterOptions = [
   { label: "全部角色", value: "all" },
   { label: "管理員", value: "admin" },
   { label: "照顧者", value: "caregiver" },
-  { label: "家屬", value: "family" },
 ];
 
 const statusFilterOptions = [
@@ -377,12 +362,6 @@ const roleOptions = [
     icon: "pi pi-users",
     description: "可管理個案與紀錄",
   },
-  {
-    label: "家屬",
-    value: "family",
-    icon: "pi pi-heart",
-    description: "僅可查看相關個案",
-  },
 ];
 
 // Computed
@@ -391,7 +370,6 @@ const stats = computed(() => {
     admin: users.value.filter((u) => u.role === "admin" && u.isActive).length,
     caregiver: users.value.filter((u) => u.role === "caregiver" && u.isActive)
       .length,
-    family: users.value.filter((u) => u.role === "family" && u.isActive).length,
   };
 });
 
@@ -536,7 +514,6 @@ const getRoleLabel = (role: string): string => {
   const labels: Record<string, string> = {
     admin: "管理員",
     caregiver: "照顧者",
-    family: "家屬",
   };
   return labels[role] || role;
 };
@@ -545,7 +522,6 @@ const getRoleSeverity = (role: string): string => {
   const severities: Record<string, string> = {
     admin: "danger",
     caregiver: "success",
-    family: "info",
   };
   return severities[role] || "secondary";
 };
@@ -554,7 +530,6 @@ const getRoleIcon = (role: string): string => {
   const icons: Record<string, string> = {
     admin: "pi pi-shield",
     caregiver: "pi pi-users",
-    family: "pi pi-heart",
   };
   return icons[role] || "pi pi-user";
 };
@@ -563,7 +538,6 @@ const getRoleColor = (role: string): string => {
   const colors: Record<string, string> = {
     admin: "bg-red-500",
     caregiver: "bg-green-500",
-    family: "bg-purple-500",
   };
   return colors[role] || "bg-gray-500";
 };
@@ -582,12 +556,6 @@ const getRolePermissions = (role: string): string[] => {
       "新增、編輯照護紀錄",
       "查看班級統計數據",
       "匯出個案報表",
-    ],
-    family: [
-      "查看相關個案資料",
-      "查看個案照護紀錄",
-      "查看生命徵象紀錄",
-      "接收通知訊息",
     ],
   };
   return permissions[role] || [];

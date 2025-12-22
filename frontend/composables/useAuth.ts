@@ -16,7 +16,7 @@ interface UserProfile {
   email: string;
   displayName: string;
   phone?: string;
-  role: "admin" | "caregiver" | "family";
+  role: "admin" | "caregiver";
   isActive: boolean;
   createdAt?: any;
   updatedAt?: any;
@@ -69,12 +69,12 @@ export const useAuth = () => {
       // 發送驗證郵件
       await sendEmailVerification(userCredential.user);
 
-      // 建立 Firestore 使用者資料（預設角色為 family）
+      // 建立 Firestore 使用者資料（預設角色為 caregiver）
       const userDoc = {
         email: userData.email,
         displayName: userData.displayName,
         phone: userData.phone || "",
-        role: "family", // 註冊時統一設定為家屬，之後由管理員調整
+        role: "caregiver", // 註冊時統一設定為照顧者，如需管理員權限請聯絡現有管理員調整
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         isActive: true,
@@ -158,7 +158,7 @@ export const useAuth = () => {
           email: data.email,
           displayName: data.displayName,
           phone: data.phone,
-          role: data.role as "admin" | "caregiver" | "family",
+          role: data.role as "admin" | "caregiver",
           isActive: data.isActive,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
@@ -265,7 +265,7 @@ export const useAuth = () => {
               email: data.email,
               displayName: data.displayName,
               phone: data.phone,
-              role: data.role as "admin" | "caregiver" | "family",
+              role: data.role as "admin" | "caregiver",
               isActive: data.isActive,
               createdAt: data.createdAt,
               updatedAt: data.updatedAt,
