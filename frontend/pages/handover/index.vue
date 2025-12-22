@@ -7,7 +7,9 @@
           <i class="pi pi-sync text-primary"></i>
           班務交接
         </h1>
-        <p class="text-gray-500 mt-2">記錄並確認班次交接事項，確保照護工作無縫銜接</p>
+        <p class="text-gray-500 mt-2">
+          記錄並確認班次交接事項，確保照護工作無縫銜接
+        </p>
       </div>
       <Button
         label="新增交接"
@@ -29,7 +31,9 @@
                 {{ pendingCount }}
               </p>
             </div>
-            <div class="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+            <div
+              class="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center"
+            >
               <i class="pi pi-clock text-2xl text-orange-600"></i>
             </div>
           </div>
@@ -45,7 +49,9 @@
                 {{ todayCount }}
               </p>
             </div>
-            <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+            <div
+              class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center"
+            >
               <i class="pi pi-calendar text-2xl text-blue-600"></i>
             </div>
           </div>
@@ -61,7 +67,9 @@
                 {{ confirmedCount }}
               </p>
             </div>
-            <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+            <div
+              class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center"
+            >
               <i class="pi pi-check-circle text-2xl text-green-600"></i>
             </div>
           </div>
@@ -127,13 +135,19 @@
       <template #title>
         <div class="flex items-center justify-between py-2">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+            <div
+              class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center"
+            >
               <i class="pi pi-list text-indigo-600 text-lg"></i>
             </div>
             <div>
               <span class="text-xl font-bold text-gray-800">交接列表</span>
               <p class="text-sm text-gray-500 mt-1">
-                共 <span class="font-semibold text-indigo-600">{{ filteredHandovers.length }}</span> 筆交接
+                共
+                <span class="font-semibold text-indigo-600">{{
+                  filteredHandovers.length
+                }}</span>
+                筆交接
               </p>
             </div>
           </div>
@@ -152,18 +166,29 @@
           sortField="shiftDate"
           :sortOrder="-1"
         >
-          <Column field="shiftDate" header="日期" sortable style="min-width: 120px">
+          <Column
+            field="shiftDate"
+            header="日期"
+            sortable
+            style="min-width: 120px"
+          >
             <template #body="{ data }">
               <div class="flex items-center gap-2">
                 <i class="pi pi-calendar text-blue-500 text-sm"></i>
-                <span class="font-medium">{{ formatDate(data.shiftDate) }}</span>
+                <span class="font-medium">{{
+                  formatDate(data.shiftDate)
+                }}</span>
               </div>
             </template>
           </Column>
 
           <Column field="shiftType" header="班次" style="min-width: 100px">
             <template #body="{ data }">
-              <Tag :value="getShiftLabel(data.shiftType)" severity="info" rounded />
+              <Tag
+                :value="getShiftLabel(data.shiftType)"
+                severity="info"
+                rounded
+              />
             </template>
           </Column>
 
@@ -175,14 +200,21 @@
                 rounded
               >
                 <template #default>
-                  <i :class="'pi ' + getPriorityMeta(data.priority).icon" class="mr-1"></i>
+                  <i
+                    :class="'pi ' + getPriorityMeta(data.priority).icon"
+                    class="mr-1"
+                  ></i>
                   {{ getPriorityMeta(data.priority).label }}
                 </template>
               </Tag>
             </template>
           </Column>
 
-          <Column field="targetClients" header="服務對象" style="min-width: 150px">
+          <Column
+            field="targetClients"
+            header="服務對象"
+            style="min-width: 150px"
+          >
             <template #body="{ data }">
               <div class="flex flex-wrap gap-1">
                 <Tag
@@ -204,15 +236,32 @@
             </template>
           </Column>
 
-          <Column field="content" header="交接事項" style="min-width: 250px">
+          <Column
+            field="content"
+            header="交接事項"
+            style="min-width: 250px; max-width: 400px"
+          >
             <template #body="{ data }">
-              <p class="text-gray-700 line-clamp-2">{{ data.content }}</p>
+              <p
+                class="text-gray-700 break-words"
+                style="
+                  white-space: pre-wrap !important;
+                  word-break: break-all;
+                  overflow-wrap: break-word;
+                "
+              >
+                {{ data.content }}
+              </p>
             </template>
           </Column>
 
-          <Column field="createdByName" header="建立人員" style="min-width: 100px">
+          <Column
+            field="createdByName"
+            header="建立人員"
+            style="min-width: 100px"
+          >
             <template #body="{ data }">
-              <span class="text-gray-600">{{ data.createdByName || '-' }}</span>
+              <span class="text-gray-600">{{ data.createdByName || "-" }}</span>
             </template>
           </Column>
 
@@ -226,7 +275,7 @@
             </template>
           </Column>
 
-          <Column header="操作" style="min-width: 150px">
+          <Column header="操作" style="min-width: 180px">
             <template #body="{ data }">
               <div class="flex gap-2">
                 <Button
@@ -236,6 +285,18 @@
                   severity="info"
                   @click="viewHandover(data)"
                   v-tooltip.top="'查看詳情'"
+                />
+                <Button
+                  v-if="
+                    data.status === 'pending' &&
+                    (isAdmin || data.createdBy === userProfile?.id)
+                  "
+                  icon="pi pi-pencil"
+                  text
+                  rounded
+                  severity="warning"
+                  @click="openEditDialog(data)"
+                  v-tooltip.top="'編輯'"
                 />
                 <Button
                   v-if="data.status === 'pending'"
@@ -262,12 +323,20 @@
 
         <!-- 空狀態 -->
         <div v-else class="text-center py-16">
-          <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gray-100 mb-4">
+          <div
+            class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gray-100 mb-4"
+          >
             <i class="pi pi-sync text-5xl text-gray-400"></i>
           </div>
-          <h3 class="text-lg font-semibold text-gray-700 mb-2">目前沒有交接紀錄</h3>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">
+            目前沒有交接紀錄
+          </h3>
           <p class="text-gray-500 mb-6">開始建立第一筆班務交接吧！</p>
-          <Button label="新增交接" icon="pi pi-plus" @click="openCreateDialog" />
+          <Button
+            label="新增交接"
+            icon="pi pi-plus"
+            @click="openCreateDialog"
+          />
         </div>
       </template>
     </Card>
@@ -282,11 +351,18 @@
     >
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-            <i :class="editingHandover ? 'pi pi-pencil' : 'pi pi-plus'" class="text-indigo-600"></i>
+          <div
+            class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center"
+          >
+            <i
+              :class="editingHandover ? 'pi pi-pencil' : 'pi pi-plus'"
+              class="text-indigo-600"
+            ></i>
           </div>
           <div>
-            <h3 class="text-lg font-bold">{{ editingHandover ? '編輯班務交接' : '新增班務交接' }}</h3>
+            <h3 class="text-lg font-bold">
+              {{ editingHandover ? "編輯班務交接" : "新增班務交接" }}
+            </h3>
             <p class="text-sm text-gray-500">填寫交接內容，通知相關人員</p>
           </div>
         </div>
@@ -296,11 +372,15 @@
         <!-- 建立人員（唯讀） -->
         <div class="bg-gray-50 rounded-lg p-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-              {{ userProfile?.displayName?.charAt(0) || '?' }}
+            <div
+              class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold"
+            >
+              {{ userProfile?.displayName?.charAt(0) || "?" }}
             </div>
             <div>
-              <p class="font-semibold text-gray-800">{{ userProfile?.displayName }}</p>
+              <p class="font-semibold text-gray-800">
+                {{ userProfile?.displayName }}
+              </p>
               <p class="text-sm text-gray-500">建立人員</p>
             </div>
           </div>
@@ -354,12 +434,21 @@
               :key="option.value"
               @click="handoverForm.priority = option.value"
               class="flex-1 p-3 border-2 rounded-lg cursor-pointer transition-all"
-              :class="handoverForm.priority === option.value
-                ? getPriorityBorderClass(option.value)
-                : 'border-gray-200 hover:border-gray-300'"
+              :class="
+                handoverForm.priority === option.value
+                  ? getPriorityBorderClass(option.value)
+                  : 'border-gray-200 hover:border-gray-300'
+              "
             >
               <div class="text-center">
-                <i :class="'pi ' + option.icon + ' text-2xl mb-1 ' + getPriorityTextClass(option.value)"></i>
+                <i
+                  :class="
+                    'pi ' +
+                    option.icon +
+                    ' text-2xl mb-1 ' +
+                    getPriorityTextClass(option.value)
+                  "
+                ></i>
                 <p class="font-medium text-gray-700">{{ option.label }}</p>
               </div>
             </div>
@@ -415,7 +504,7 @@
             placeholder="請詳細描述需要交接的事項..."
             class="w-full text-lg"
             :invalid="!!formErrors.content"
-            style="font-size: 1.125rem; line-height: 1.75rem;"
+            style="font-size: 1.125rem; line-height: 1.75rem"
           />
           <small v-if="formErrors.content" class="text-red-500 mt-1 block">
             {{ formErrors.content }}
@@ -457,14 +546,18 @@
           <div class="grid grid-cols-2 gap-4 pb-4 border-b">
             <div>
               <label class="text-sm text-gray-600">交接日期</label>
-              <p class="text-lg font-semibold text-gray-800 mt-1">
+              <p class="text-lg font-semibold text-gray-800 mt-1 break-words">
                 {{ formatDate(viewingHandover.shiftDate) }}
               </p>
             </div>
             <div>
               <label class="text-sm text-gray-600">班次</label>
               <div class="mt-1">
-                <Tag :value="getShiftLabel(viewingHandover.shiftType)" severity="info" rounded />
+                <Tag
+                  :value="getShiftLabel(viewingHandover.shiftType)"
+                  severity="info"
+                  rounded
+                />
               </div>
             </div>
             <div>
@@ -479,8 +572,8 @@
             </div>
             <div>
               <label class="text-sm text-gray-600">建立人員</label>
-              <p class="text-lg font-semibold text-gray-800 mt-1">
-                {{ viewingHandover.createdByName || '-' }}
+              <p class="text-lg font-semibold text-gray-800 mt-1 break-words">
+                {{ viewingHandover.createdByName || "-" }}
               </p>
             </div>
           </div>
@@ -500,7 +593,10 @@
                 rounded
               >
                 <template #default>
-                  <i :class="user.isRead ? 'pi pi-check' : 'pi pi-clock'" class="mr-1"></i>
+                  <i
+                    :class="user.isRead ? 'pi pi-check' : 'pi pi-clock'"
+                    class="mr-1"
+                  ></i>
                   {{ user.userName }}
                 </template>
               </Tag>
@@ -531,20 +627,26 @@
               交接事項
             </label>
             <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">
+              <p
+                class="text-gray-700 whitespace-pre-wrap break-words text-lg leading-relaxed"
+              >
                 {{ viewingHandover.content }}
               </p>
             </div>
           </div>
 
           <!-- 確認資訊 -->
-          <div v-if="viewingHandover.status === 'confirmed'" class="bg-green-50 rounded-lg p-4">
+          <div
+            v-if="viewingHandover.status === 'confirmed'"
+            class="bg-green-50 rounded-lg p-4"
+          >
             <div class="flex items-center gap-2 text-green-700">
               <i class="pi pi-check-circle text-xl"></i>
               <div>
-                <p class="font-semibold">已確認交接</p>
-                <p class="text-sm">
-                  {{ viewingHandover.confirmedByName }} 於 {{ formatDateTime(viewingHandover.confirmedAt) }} 確認
+                <p class="font-semibold break-words">已確認交接</p>
+                <p class="text-sm break-words">
+                  {{ viewingHandover.confirmedByName }} 於
+                  {{ formatDateTime(viewingHandover.confirmedAt) }} 確認
                 </p>
               </div>
             </div>
@@ -560,6 +662,16 @@
             outlined
             @click="showViewDialog = false"
             icon="pi pi-times"
+          />
+          <Button
+            v-if="
+              viewingHandover?.status === 'pending' &&
+              (isAdmin || viewingHandover.createdBy === userProfile?.id)
+            "
+            label="編輯"
+            icon="pi pi-pencil"
+            severity="info"
+            @click="editFromView"
           />
           <Button
             v-if="viewingHandover?.status === 'pending'"
@@ -582,7 +694,9 @@
     >
       <div class="py-4">
         <div class="text-center mb-4">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4"
+          >
             <i class="pi pi-check text-3xl text-green-600"></i>
           </div>
           <h3 class="text-lg font-semibold text-gray-800">確認已完成交接？</h3>
@@ -620,7 +734,9 @@
     >
       <div class="py-4">
         <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-          <p class="text-gray-700">確定要刪除這筆交接紀錄嗎？此操作無法復原。</p>
+          <p class="text-gray-700">
+            確定要刪除這筆交接紀錄嗎？此操作無法復原。
+          </p>
         </div>
       </div>
 
@@ -647,18 +763,18 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs';
-import { useToast } from 'primevue/usetoast';
+import dayjs from "dayjs";
+import { useToast } from "primevue/usetoast";
 import {
   useHandover,
   SHIFT_OPTIONS,
   PRIORITY_OPTIONS,
-  type Handover
-} from '~/composables/useHandover';
+  type Handover,
+} from "~/composables/useHandover";
 
 definePageMeta({
-  layout: 'default',
-  middleware: ['auth'],
+  layout: "default",
+  middleware: ["auth"],
 });
 
 const toast = useToast();
@@ -675,7 +791,7 @@ const {
   getShiftLabel,
   getPriorityMeta,
 } = useHandover();
-const { formatDate: formatDateUtil, formatDateTime } = useUtils();
+const { formatDateTime } = useUtils();
 
 // 狀態
 const loading = ref(false);
@@ -696,24 +812,24 @@ const confirmingHandover = ref<Handover | null>(null);
 const deletingHandover = ref<Handover | null>(null);
 
 // 篩選
-const filterStatus = ref('all');
+const filterStatus = ref("all");
 const filterStartDate = ref<Date | null>(null);
 const filterEndDate = ref<Date | null>(null);
 
 const statusOptions = [
-  { label: '全部狀態', value: 'all' },
-  { label: '待確認', value: 'pending' },
-  { label: '已確認', value: 'confirmed' },
+  { label: "全部狀態", value: "all" },
+  { label: "待確認", value: "pending" },
+  { label: "已確認", value: "confirmed" },
 ];
 
 // 表單
 const handoverForm = ref({
   shiftDate: new Date(),
-  shiftType: '' as string,
-  priority: 'normal' as string,
+  shiftType: "" as string,
+  priority: "normal" as string,
   notifyUserIds: [] as string[],
   targetClientIds: [] as string[],
-  content: '',
+  content: "",
 });
 
 const formErrors = ref<Record<string, string>>({});
@@ -721,15 +837,15 @@ const formErrors = ref<Record<string, string>>({});
 // 計算屬性
 const userOptions = computed(() => {
   return allUsers.value
-    .filter(u => u.isActive && u.id !== userProfile.value?.id)
-    .map(u => ({
+    .filter((u) => u.isActive && u.id !== userProfile.value?.id)
+    .map((u) => ({
       label: `${u.displayName} (${getRoleLabel(u.role)})`,
       value: u.id,
     }));
 });
 
 const clientOptions = computed(() => {
-  return allClients.value.map(c => ({
+  return allClients.value.map((c) => ({
     label: c.name,
     value: c.id,
   }));
@@ -738,19 +854,19 @@ const clientOptions = computed(() => {
 const filteredHandovers = computed(() => {
   let result = handoversData.value;
 
-  if (filterStatus.value !== 'all') {
-    result = result.filter(h => h.status === filterStatus.value);
+  if (filterStatus.value !== "all") {
+    result = result.filter((h) => h.status === filterStatus.value);
   }
 
   if (filterStartDate.value) {
-    result = result.filter(h => {
+    result = result.filter((h) => {
       const date = toDate(h.shiftDate);
       return date && date >= filterStartDate.value!;
     });
   }
 
   if (filterEndDate.value) {
-    result = result.filter(h => {
+    result = result.filter((h) => {
       const date = toDate(h.shiftDate);
       return date && date <= filterEndDate.value!;
     });
@@ -759,13 +875,17 @@ const filteredHandovers = computed(() => {
   return result;
 });
 
-const pendingCount = computed(() => handoversData.value.filter(h => h.status === 'pending').length);
-const confirmedCount = computed(() => handoversData.value.filter(h => h.status === 'confirmed').length);
+const pendingCount = computed(
+  () => handoversData.value.filter((h) => h.status === "pending").length
+);
+const confirmedCount = computed(
+  () => handoversData.value.filter((h) => h.status === "confirmed").length
+);
 const todayCount = computed(() => {
-  const today = dayjs().startOf('day');
-  return handoversData.value.filter(h => {
+  const today = dayjs().startOf("day");
+  return handoversData.value.filter((h) => {
     const date = toDate(h.shiftDate);
-    return date && dayjs(date).isSame(today, 'day');
+    return date && dayjs(date).isSame(today, "day");
   }).length;
 });
 
@@ -780,56 +900,56 @@ const toDate = (value: any): Date | null => {
 
 const formatDate = (date: any) => {
   const d = toDate(date);
-  return d ? dayjs(d).format('YYYY/MM/DD') : '-';
+  return d ? dayjs(d).format("YYYY/MM/DD") : "-";
 };
 
 const getRoleLabel = (role: string) => {
   const labels: Record<string, string> = {
-    admin: '管理員',
-    caregiver: '照顧者',
-    family: '家屬',
+    admin: "管理員",
+    caregiver: "照顧者",
+    family: "家屬",
   };
   return labels[role] || role;
 };
 
 const getPrioritySeverity = (priority: string) => {
   const map: Record<string, string> = {
-    urgent: 'danger',
-    high: 'warn',
-    normal: 'success',
-    low: 'secondary',
+    urgent: "danger",
+    high: "warn",
+    normal: "success",
+    low: "secondary",
   };
-  return map[priority] || 'secondary';
+  return map[priority] || "secondary";
 };
 
 const getPriorityBorderClass = (priority: string) => {
   const map: Record<string, string> = {
-    urgent: 'border-red-500 bg-red-50',
-    high: 'border-orange-500 bg-orange-50',
-    normal: 'border-green-500 bg-green-50',
-    low: 'border-gray-400 bg-gray-50',
+    urgent: "border-red-500 bg-red-50",
+    high: "border-orange-500 bg-orange-50",
+    normal: "border-green-500 bg-green-50",
+    low: "border-gray-400 bg-gray-50",
   };
-  return map[priority] || 'border-gray-200';
+  return map[priority] || "border-gray-200";
 };
 
 const getPriorityTextClass = (priority: string) => {
   const map: Record<string, string> = {
-    urgent: 'text-red-500',
-    high: 'text-orange-500',
-    normal: 'text-green-500',
-    low: 'text-gray-400',
+    urgent: "text-red-500",
+    high: "text-orange-500",
+    normal: "text-green-500",
+    low: "text-gray-400",
   };
-  return map[priority] || 'text-gray-400';
+  return map[priority] || "text-gray-400";
 };
 
 const resetForm = () => {
   handoverForm.value = {
     shiftDate: new Date(),
-    shiftType: '',
-    priority: 'normal',
+    shiftType: "",
+    priority: "normal",
     notifyUserIds: [],
     targetClientIds: [],
-    content: '',
+    content: "",
   };
   formErrors.value = {};
 };
@@ -840,6 +960,22 @@ const openCreateDialog = () => {
   showCreateDialog.value = true;
 };
 
+const openEditDialog = (handover: Handover) => {
+  editingHandover.value = handover;
+
+  // 填入表單資料 - 需要轉換日期格式
+  handoverForm.value = {
+    shiftDate: toDate(handover.shiftDate) || new Date(),
+    shiftType: handover.shiftType,
+    priority: handover.priority,
+    content: handover.content,
+    targetClientIds: handover.targetClients?.map((c) => c.clientId) || [],
+    notifyUserIds: handover.notifyUsers?.map((u) => u.userId) || [],
+  };
+
+  showCreateDialog.value = true;
+};
+
 const viewHandover = async (handover: Handover) => {
   viewingHandover.value = handover;
   showViewDialog.value = true;
@@ -847,6 +983,13 @@ const viewHandover = async (handover: Handover) => {
   // 標記為已讀
   if (handover.id) {
     await markAsRead(handover.id);
+  }
+};
+
+const editFromView = () => {
+  if (viewingHandover.value) {
+    showViewDialog.value = false;
+    openEditDialog(viewingHandover.value);
   }
 };
 
@@ -865,16 +1008,19 @@ const validateForm = () => {
   formErrors.value = {};
 
   if (!handoverForm.value.shiftDate) {
-    formErrors.value.shiftDate = '請選擇交接日期';
+    formErrors.value.shiftDate = "請選擇交接日期";
   }
   if (!handoverForm.value.shiftType) {
-    formErrors.value.shiftType = '請選擇班次';
+    formErrors.value.shiftType = "請選擇班次";
   }
   if (handoverForm.value.notifyUserIds.length === 0) {
-    formErrors.value.notifyUsers = '請選擇至少一位通知人員';
+    formErrors.value.notifyUsers = "請選擇至少一位通知人員";
   }
-  if (!handoverForm.value.content || handoverForm.value.content.trim().length === 0) {
-    formErrors.value.content = '請輸入交接事項';
+  if (
+    !handoverForm.value.content ||
+    handoverForm.value.content.trim().length === 0
+  ) {
+    formErrors.value.content = "請輸入交接事項";
   }
 
   return Object.keys(formErrors.value).length === 0;
@@ -886,21 +1032,21 @@ const saveHandover = async () => {
   saving.value = true;
   try {
     // 建構通知人員資料
-    const notifyUsers = handoverForm.value.notifyUserIds.map(userId => {
-      const user = allUsers.value.find(u => u.id === userId);
+    const notifyUsers = handoverForm.value.notifyUserIds.map((userId) => {
+      const user = allUsers.value.find((u) => u.id === userId);
       return {
         userId,
-        userName: user?.displayName || '',
+        userName: user?.displayName || "",
         isRead: false,
       };
     });
 
     // 建構服務對象資料
-    const targetClients = handoverForm.value.targetClientIds.map(clientId => {
-      const client = allClients.value.find(c => c.id === clientId);
+    const targetClients = handoverForm.value.targetClientIds.map((clientId) => {
+      const client = allClients.value.find((c) => c.id === clientId);
       return {
         clientId,
-        clientName: client?.name || '',
+        clientName: client?.name || "",
       };
     });
 
@@ -911,25 +1057,25 @@ const saveHandover = async () => {
       notifyUsers,
       targetClients,
       content: handoverForm.value.content,
-      createdBy: userProfile.value?.id || '',
-      createdByName: userProfile.value?.displayName || '',
-      status: 'pending' as const,
+      createdBy: userProfile.value?.id || "",
+      createdByName: userProfile.value?.displayName || "",
+      status: "pending" as const,
     };
 
     if (editingHandover.value?.id) {
       await updateHandover(editingHandover.value.id, data);
       toast.add({
-        severity: 'success',
-        summary: '更新成功',
-        detail: '交接紀錄已更新',
+        severity: "success",
+        summary: "更新成功",
+        detail: "交接紀錄已更新",
         life: 3000,
       });
     } else {
       await createHandover(data);
       toast.add({
-        severity: 'success',
-        summary: '建立成功',
-        detail: '班務交接已建立',
+        severity: "success",
+        summary: "建立成功",
+        detail: "班務交接已建立",
         life: 3000,
       });
     }
@@ -937,11 +1083,11 @@ const saveHandover = async () => {
     showCreateDialog.value = false;
     await loadHandovers();
   } catch (error) {
-    console.error('儲存交接失敗:', error);
+    console.error("儲存交接失敗:", error);
     toast.add({
-      severity: 'error',
-      summary: '儲存失敗',
-      detail: '請稍後再試',
+      severity: "error",
+      summary: "儲存失敗",
+      detail: "請稍後再試",
       life: 3000,
     });
   } finally {
@@ -957,20 +1103,20 @@ const doConfirmHandover = async () => {
     await confirmHandover(confirmingHandover.value.id);
 
     toast.add({
-      severity: 'success',
-      summary: '確認成功',
-      detail: '交接已確認完成',
+      severity: "success",
+      summary: "確認成功",
+      detail: "交接已確認完成",
       life: 3000,
     });
 
     showConfirmDialog.value = false;
     await loadHandovers();
   } catch (error) {
-    console.error('確認交接失敗:', error);
+    console.error("確認交接失敗:", error);
     toast.add({
-      severity: 'error',
-      summary: '確認失敗',
-      detail: '請稍後再試',
+      severity: "error",
+      summary: "確認失敗",
+      detail: "請稍後再試",
       life: 3000,
     });
   } finally {
@@ -986,20 +1132,20 @@ const doDeleteHandover = async () => {
     await deleteHandover(deletingHandover.value.id);
 
     toast.add({
-      severity: 'success',
-      summary: '刪除成功',
-      detail: '交接紀錄已刪除',
+      severity: "success",
+      summary: "刪除成功",
+      detail: "交接紀錄已刪除",
       life: 3000,
     });
 
     showDeleteDialog.value = false;
     await loadHandovers();
   } catch (error) {
-    console.error('刪除交接失敗:', error);
+    console.error("刪除交接失敗:", error);
     toast.add({
-      severity: 'error',
-      summary: '刪除失敗',
-      detail: '請稍後再試',
+      severity: "error",
+      summary: "刪除失敗",
+      detail: "請稍後再試",
       life: 3000,
     });
   } finally {
@@ -1008,7 +1154,7 @@ const doDeleteHandover = async () => {
 };
 
 const resetFilters = () => {
-  filterStatus.value = 'all';
+  filterStatus.value = "all";
   filterStartDate.value = null;
   filterEndDate.value = null;
 };
@@ -1020,11 +1166,11 @@ const loadHandovers = async () => {
     const data = await getHandovers();
     handoversData.value = data;
   } catch (error) {
-    console.error('載入交接失敗:', error);
+    console.error("載入交接失敗:", error);
     toast.add({
-      severity: 'error',
-      summary: '載入失敗',
-      detail: '無法取得交接紀錄',
+      severity: "error",
+      summary: "載入失敗",
+      detail: "無法取得交接紀錄",
       life: 3000,
     });
   } finally {
@@ -1034,20 +1180,20 @@ const loadHandovers = async () => {
 
 const loadUsers = async () => {
   try {
-    const data = await getCollection('users');
+    const data = await getCollection("users");
     allUsers.value = data;
   } catch (error) {
-    console.error('載入使用者失敗:', error);
+    console.error("載入使用者失敗:", error);
   }
 };
 
+// 從查詢參數編輯
+const { checkEditQuery } = useEditFromQuery(handoversData, openEditDialog);
+
 // 初始化
 onMounted(async () => {
-  await Promise.all([
-    loadHandovers(),
-    loadUsers(),
-    fetchClients(),
-  ]);
+  await Promise.all([loadHandovers(), loadUsers(), fetchClients()]);
+  checkEditQuery();
 });
 </script>
 

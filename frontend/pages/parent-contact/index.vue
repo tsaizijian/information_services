@@ -4,7 +4,12 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <div class="flex items-center gap-2 mb-2">
-          <Button icon="pi pi-arrow-left" text rounded @click="navigateTo('/')" />
+          <Button
+            icon="pi pi-arrow-left"
+            text
+            rounded
+            @click="navigateTo('/')"
+          />
           <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
             <i class="pi pi-phone text-blue-500"></i>
             家屬聯絡紀錄
@@ -12,7 +17,13 @@
         </div>
         <p class="text-gray-500 ml-12">記錄與家屬的通話對象及內容</p>
       </div>
-      <Button label="新增紀錄" icon="pi pi-plus" size="large" @click="openCreateDialog" class="shadow-md" />
+      <Button
+        label="新增紀錄"
+        icon="pi pi-plus"
+        size="large"
+        @click="openCreateDialog"
+        class="shadow-md"
+      />
     </div>
 
     <!-- 篩選 -->
@@ -21,18 +32,44 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium text-gray-600">個案</label>
-            <Select v-model="filterClientId" :options="clientOptions" optionLabel="label" optionValue="value" placeholder="全部個案" class="w-full" showClear filter />
+            <Select
+              v-model="filterClientId"
+              :options="clientOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="全部個案"
+              class="w-full"
+              showClear
+              filter
+            />
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium text-gray-600">開始日期</label>
-            <DatePicker v-model="filterStartDate" dateFormat="yy/mm/dd" class="w-full" showIcon />
+            <DatePicker
+              v-model="filterStartDate"
+              dateFormat="yy/mm/dd"
+              class="w-full"
+              showIcon
+            />
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium text-gray-600">結束日期</label>
-            <DatePicker v-model="filterEndDate" dateFormat="yy/mm/dd" class="w-full" showIcon />
+            <DatePicker
+              v-model="filterEndDate"
+              dateFormat="yy/mm/dd"
+              class="w-full"
+              showIcon
+            />
           </div>
           <div class="flex items-end">
-            <Button label="重置" icon="pi pi-refresh" severity="secondary" outlined @click="resetFilters" class="w-full" />
+            <Button
+              label="重置"
+              icon="pi pi-refresh"
+              severity="secondary"
+              outlined
+              @click="resetFilters"
+              class="w-full"
+            />
           </div>
         </div>
       </template>
@@ -42,14 +79,23 @@
     <Card class="shadow-sm border-0">
       <template #title>
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+          <div
+            class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"
+          >
             <i class="pi pi-list text-blue-600"></i>
           </div>
           <span>紀錄列表（{{ filteredRecords.length }} 筆）</span>
         </div>
       </template>
       <template #content>
-        <DataTable :value="filteredRecords" paginator :rows="10" :loading="loading" stripedRows class="p-datatable-sm">
+        <DataTable
+          :value="filteredRecords"
+          paginator
+          :rows="10"
+          :loading="loading"
+          stripedRows
+          class="p-datatable-sm"
+        >
           <Column field="contactDate" header="日期" sortable>
             <template #body="slotProps">
               {{ formatDate(slotProps.data.contactDate) }}
@@ -59,12 +105,20 @@
           <Column field="contactTarget" header="通話對象"></Column>
           <Column field="contactMethod" header="聯絡方式">
             <template #body="slotProps">
-              <Tag :value="slotProps.data.contactMethod" :severity="getMethodSeverity(slotProps.data.contactMethod)" />
+              <Tag
+                :value="slotProps.data.contactMethod"
+                :severity="getMethodSeverity(slotProps.data.contactMethod)"
+              />
             </template>
           </Column>
-          <Column field="content" header="內容摘要">
+          <Column field="content" header="內容摘要" style="max-width: 300px">
             <template #body="slotProps">
-              <div class="truncate max-w-xs cursor-pointer hover:text-blue-600" title="點擊查看完整內容" @click="openViewDialog(slotProps.data)">
+              <div
+                class="cursor-pointer hover:text-blue-600"
+                style="word-break: break-all; overflow-wrap: break-word"
+                title="點擊查看完整內容"
+                @click="openViewDialog(slotProps.data)"
+              >
                 {{ slotProps.data.content }}
               </div>
             </template>
@@ -73,9 +127,28 @@
           <Column header="操作" style="width: 150px">
             <template #body="slotProps">
               <div class="flex gap-2">
-                <Button icon="pi pi-eye" text rounded severity="secondary" @click="openViewDialog(slotProps.data)" title="查看詳情" />
-                <Button icon="pi pi-pencil" text rounded severity="info" @click="openEditDialog(slotProps.data)" />
-                <Button icon="pi pi-trash" text rounded severity="danger" @click="confirmDelete(slotProps.data)" />
+                <Button
+                  icon="pi pi-eye"
+                  text
+                  rounded
+                  severity="secondary"
+                  @click="openViewDialog(slotProps.data)"
+                  title="查看詳情"
+                />
+                <Button
+                  icon="pi pi-pencil"
+                  text
+                  rounded
+                  severity="info"
+                  @click="openEditDialog(slotProps.data)"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  text
+                  rounded
+                  severity="danger"
+                  @click="confirmDelete(slotProps.data)"
+                />
               </div>
             </template>
           </Column>
@@ -90,71 +163,139 @@
     </Card>
 
     <!-- 新增/編輯對話框 -->
-    <Dialog v-model:visible="dialogVisible" :header="isEditing ? '編輯紀錄' : '新增紀錄'" modal class="w-full max-w-lg">
+    <Dialog
+      v-model:visible="dialogVisible"
+      :header="isEditing ? '編輯紀錄' : '新增紀錄'"
+      modal
+      class="w-full max-w-lg"
+    >
       <div class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-2">
           <label class="required">個案</label>
-          <Select v-model="form.clientId" :options="clientOptions" optionLabel="label" optionValue="value" placeholder="選擇個案" class="w-full" filter :disabled="isEditing" />
+          <Select
+            v-model="form.clientId"
+            :options="clientOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="選擇個案"
+            class="w-full"
+            filter
+            :disabled="isEditing"
+          />
         </div>
 
         <div class="flex flex-col gap-2">
           <label class="required">聯絡日期</label>
-          <DatePicker v-model="form.contactDate" showTime hourFormat="24" dateFormat="yy/mm/dd" class="w-full" showIcon />
+          <DatePicker
+            v-model="form.contactDate"
+            showTime
+            hourFormat="24"
+            dateFormat="yy/mm/dd"
+            class="w-full"
+            showIcon
+          />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
             <label class="required">通話對象</label>
-            <InputText v-model="form.contactTarget" placeholder="例如：王爸爸" />
+            <InputText
+              v-model="form.contactTarget"
+              placeholder="例如：王爸爸"
+            />
           </div>
           <div class="flex flex-col gap-2">
             <label class="required">聯絡方式</label>
-            <Select v-model="form.contactMethod" :options="methodOptions" placeholder="選擇方式" class="w-full" editable />
+            <Select
+              v-model="form.contactMethod"
+              :options="methodOptions"
+              placeholder="選擇方式"
+              class="w-full"
+              editable
+            />
           </div>
         </div>
 
         <div class="flex flex-col gap-2">
           <label class="required">內容摘要</label>
-          <Textarea v-model="form.content" rows="5" placeholder="請輸入通話內容..." class="w-full" />
+          <Textarea
+            v-model="form.content"
+            rows="5"
+            placeholder="請輸入通話內容..."
+            class="w-full"
+          />
         </div>
       </div>
 
       <template #footer>
-        <Button label="取消" icon="pi pi-times" text @click="dialogVisible = false" />
-        <Button label="儲存" icon="pi pi-check" @click="saveRecord" :loading="saving" />
+        <Button
+          label="取消"
+          icon="pi pi-times"
+          text
+          @click="dialogVisible = false"
+        />
+        <Button
+          label="儲存"
+          icon="pi pi-check"
+          @click="saveRecord"
+          :loading="saving"
+        />
       </template>
     </Dialog>
 
     <!-- 查看詳情對話框 -->
-    <Dialog v-model:visible="viewDialogVisible" header="聯絡紀錄詳情" modal class="w-full max-w-2xl">
+    <Dialog
+      v-model:visible="viewDialogVisible"
+      header="聯絡紀錄詳情"
+      modal
+      class="w-full max-w-2xl"
+    >
       <div v-if="viewingRecord" class="flex flex-col gap-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="text-sm font-medium text-gray-600">個案姓名</label>
-            <p class="mt-1 text-lg">{{ viewingRecord.clientName }}</p>
+            <p
+              class="mt-1 text-lg"
+              style="word-break: break-all; overflow-wrap: break-word"
+            >
+              {{ viewingRecord.clientName }}
+            </p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">聯絡日期</label>
-            <p class="mt-1 text-lg">{{ formatDate(viewingRecord.contactDate) }}</p>
+            <p class="mt-1 text-lg">
+              {{ formatDate(viewingRecord.contactDate) }}
+            </p>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="text-sm font-medium text-gray-600">通話對象</label>
-            <p class="mt-1 text-lg">{{ viewingRecord.contactTarget }}</p>
+            <p
+              class="mt-1 text-lg"
+              style="word-break: break-all; overflow-wrap: break-word"
+            >
+              {{ viewingRecord.contactTarget }}
+            </p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">聯絡方式</label>
             <p class="mt-1">
-              <Tag :value="viewingRecord.contactMethod" :severity="getMethodSeverity(viewingRecord.contactMethod)" />
+              <Tag
+                :value="viewingRecord.contactMethod"
+                :severity="getMethodSeverity(viewingRecord.contactMethod)"
+              />
             </p>
           </div>
         </div>
 
         <div>
           <label class="text-sm font-medium text-gray-600">完整內容</label>
-          <div class="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-wrap">
+          <div
+            class="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-wrap"
+            style="word-break: break-all; overflow-wrap: break-word"
+          >
             {{ viewingRecord.content }}
           </div>
         </div>
@@ -166,14 +307,25 @@
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">建立時間</label>
-            <p class="mt-1 text-sm text-gray-500">{{ formatDate(viewingRecord.createdAt) }}</p>
+            <p class="mt-1 text-sm text-gray-500">
+              {{ formatDate(viewingRecord.createdAt) }}
+            </p>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <Button label="關閉" icon="pi pi-times" @click="viewDialogVisible = false" />
-        <Button label="編輯" icon="pi pi-pencil" severity="info" @click="editFromView" />
+        <Button
+          label="關閉"
+          icon="pi pi-times"
+          @click="viewDialogVisible = false"
+        />
+        <Button
+          label="編輯"
+          icon="pi pi-pencil"
+          severity="info"
+          @click="editFromView"
+        />
       </template>
     </Dialog>
 
@@ -188,7 +340,8 @@ import { useToast } from "primevue/usetoast";
 import dayjs from "dayjs";
 
 // Composables
-const { getContacts, addContact, updateContact, deleteContact } = useFamilyContacts();
+const { getContacts, addContact, updateContact, deleteContact } =
+  useFamilyContacts();
 const { getClients } = useClients();
 const confirm = useConfirm();
 const toast = useToast();
@@ -229,7 +382,7 @@ const clientOptions = computed(() => {
 });
 
 const filteredRecords = computed(() => {
-  // Client-side filtering for immediate feedback if needed, 
+  // Client-side filtering for immediate feedback if needed,
   // but main filtering is done via fetchRecords
   return records.value;
 });
@@ -253,7 +406,12 @@ const fetchRecords = async () => {
     });
   } catch (error) {
     console.error("Error fetching records:", error);
-    toast.add({ severity: "error", summary: "錯誤", detail: "無法載入紀錄", life: 3000 });
+    toast.add({
+      severity: "error",
+      summary: "錯誤",
+      detail: "無法載入紀錄",
+      life: 3000,
+    });
   } finally {
     loading.value = false;
   }
@@ -294,7 +452,9 @@ const openEditDialog = (record: any) => {
   form.value = {
     id: record.id,
     clientId: record.clientId,
-    contactDate: record.contactDate.toDate ? record.contactDate.toDate() : new Date(record.contactDate),
+    contactDate: record.contactDate.toDate
+      ? record.contactDate.toDate()
+      : new Date(record.contactDate),
     contactTarget: record.contactTarget,
     contactMethod: record.contactMethod,
     content: record.content,
@@ -303,8 +463,17 @@ const openEditDialog = (record: any) => {
 };
 
 const saveRecord = async () => {
-  if (!form.value.clientId || !form.value.contactTarget || !form.value.content) {
-    toast.add({ severity: "warn", summary: "提醒", detail: "請填寫完整資料", life: 3000 });
+  if (
+    !form.value.clientId ||
+    !form.value.contactTarget ||
+    !form.value.content
+  ) {
+    toast.add({
+      severity: "warn",
+      summary: "提醒",
+      detail: "請填寫完整資料",
+      life: 3000,
+    });
     return;
   }
 
@@ -322,16 +491,31 @@ const saveRecord = async () => {
 
     if (isEditing.value && form.value.id) {
       await updateContact(form.value.id, recordData);
-      toast.add({ severity: "success", summary: "成功", detail: "紀錄已更新", life: 3000 });
+      toast.add({
+        severity: "success",
+        summary: "成功",
+        detail: "紀錄已更新",
+        life: 3000,
+      });
     } else {
       await addContact(recordData);
-      toast.add({ severity: "success", summary: "成功", detail: "紀錄已新增", life: 3000 });
+      toast.add({
+        severity: "success",
+        summary: "成功",
+        detail: "紀錄已新增",
+        life: 3000,
+      });
     }
     dialogVisible.value = false;
     fetchRecords();
   } catch (error) {
     console.error("Error saving record:", error);
-    toast.add({ severity: "error", summary: "錯誤", detail: "儲存失敗", life: 3000 });
+    toast.add({
+      severity: "error",
+      summary: "錯誤",
+      detail: "儲存失敗",
+      life: 3000,
+    });
   } finally {
     saving.value = false;
   }
@@ -346,11 +530,21 @@ const confirmDelete = (record: any) => {
     accept: async () => {
       try {
         await deleteContact(record.id);
-        toast.add({ severity: "success", summary: "成功", detail: "紀錄已刪除", life: 3000 });
+        toast.add({
+          severity: "success",
+          summary: "成功",
+          detail: "紀錄已刪除",
+          life: 3000,
+        });
         fetchRecords();
       } catch (error) {
         console.error("Error deleting record:", error);
-        toast.add({ severity: "error", summary: "錯誤", detail: "刪除失敗", life: 3000 });
+        toast.add({
+          severity: "error",
+          summary: "錯誤",
+          detail: "刪除失敗",
+          life: 3000,
+        });
       }
     },
   });
@@ -384,10 +578,14 @@ watch([filterClientId, filterStartDate, filterEndDate], () => {
   fetchRecords();
 });
 
+// 從查詢參數編輯
+const { checkEditQuery } = useEditFromQuery(records, openEditDialog);
+
 // Lifecycle
-onMounted(() => {
-  fetchClients();
-  fetchRecords();
+onMounted(async () => {
+  await fetchClients();
+  await fetchRecords();
+  checkEditQuery();
 });
 </script>
 

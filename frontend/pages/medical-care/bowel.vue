@@ -335,22 +335,13 @@ const loadRecords = async () => {
 
 watch([filterStartDate, filterEndDate], () => loadRecords());
 
+// 從查詢參數編輯
+const { checkEditQuery } = useEditFromQuery(recordsData, editRecord);
+
 // 初始化
 onMounted(async () => {
   await fetchClients();
   await loadRecords();
-
-  // 檢查是否有編輯查詢參數
-  const route = useRoute();
-  const editId = route.query.edit as string;
-  if (editId) {
-    // 等待記錄載入完成後,找到對應的記錄並打開編輯對話框
-    nextTick(() => {
-      const record = recordsData.value.find(r => r.id === editId);
-      if (record) {
-        editRecord(record);
-      }
-    });
-  }
+  checkEditQuery();
 });
 </script>

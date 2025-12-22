@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
 import { where } from "firebase/firestore";
-import { Document, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, BorderStyle, Packer, VerticalAlign } from "docx";
+import { Document, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, BorderStyle, Packer, VerticalAlign, ImageRun, TextRun } from "docx";
 
 export const useExport = () => {
   const { queryDocuments } = useFirestore();
@@ -114,10 +114,10 @@ export const useExport = () => {
     for (const client of clients) {
       await exportVitalSignsToExcel(
         client.id,
-        client.name,
+        (client as any).name,
         year,
-        client.gender,
-        client.normalBloodPressure
+        (client as any).gender,
+        (client as any).normalBloodPressure
       );
     }
   };
@@ -174,6 +174,18 @@ export const useExport = () => {
       diastolicMax: number;
     }
   ) => {
+    // 讀取機構名稱圖片
+    let logoNameImage: any = null;
+    try {
+      const response = await fetch('/logo_name.png');
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      logoNameImage = new Uint8Array(arrayBuffer);
+      console.log('機構名稱圖片載入成功');
+    } catch (error) {
+      console.warn('無法載入機構名稱圖片:', error);
+    }
+
     // 取得該年度的所有生命徵象記錄
     const { getVitalSignRecords } = useVitalSigns();
     const startDate = new Date(year, 0, 1); // 1月1日
@@ -243,7 +255,7 @@ export const useExport = () => {
 
         // 取最後一筆記錄的紀錄者
         const lastRecord = monthRecords[monthRecords.length - 1];
-        measuredBy = lastRecord.recordedByName || "";
+        measuredBy = lastRecord?.recordedByName || "";
       }
 
       monthlyData.push({
@@ -348,23 +360,6 @@ export const useExport = () => {
           ],
         })
       );
-    });
-
-    // 建立表格
-    const table = new Table({
-      rows: tableRows,
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      },
     });
 
     // 建立詳細測量記錄表格
@@ -548,18 +543,34 @@ export const useExport = () => {
             },
           },
           children: [
-            // 機構名稱 - 放大字體
-            new Paragraph({
-              text: "財團法人桃園市私立寶貝潛能發展中心",
-              alignment: AlignmentType.CENTER,
-              spacing: {
-                after: 300,
-              },
-              run: {
-                size: 32, // 16pt 字體
-                bold: true,
-              },
-            }),
+            // 機構名稱 - 使用圖片或文字
+            ...(logoNameImage ? [
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    type: 'png',
+                    data: logoNameImage,
+                    transformation: {
+                      width: 300,
+                      height: 80
+                    }
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 300 }
+              })
+            ] : [
+              new Paragraph({
+                text: "財團法人桃園市私立",
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 100 }
+              }),
+              new Paragraph({
+                text: "寶貝潛能發展中心",
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 300 }
+              })
+            ]),
             // 輸出時間、姓名和性別
             new Paragraph({
               text: `輸出時間：${currentDateTime}　　姓名：${clientName}　　性別：${gender === "male" ? "男" : "女"}`,

@@ -323,121 +323,228 @@
       </template>
     </Card>
 
-    <!-- Create Dialog -->
+    <!-- Create/Edit Dialog -->
     <Dialog
       v-model:visible="showDialog"
-      header="新增生命徵象紀錄"
       :modal="true"
-      :style="{ width: '600px' }"
+      :style="{ width: '700px' }"
       :draggable="false"
     >
-      <div class="space-y-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-600">
-              個案 <span class="text-red-500">*</span>
-            </label>
-            <Select
-              v-model="form.clientId"
-              :options="clientOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="選擇個案"
-              class="w-full"
-              filter
-              :invalid="!!formErrors.clientId"
-            />
-            <small v-if="formErrors.clientId" class="text-red-500">
-              {{ formErrors.clientId }}
-            </small>
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center"
+          >
+            <i
+              :class="editingRecord ? 'pi pi-pencil' : 'pi pi-plus'"
+              class="text-green-600"
+            ></i>
           </div>
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-600">
-              測量時間 <span class="text-red-500">*</span>
-            </label>
-            <DatePicker
-              v-model="form.measuredAt"
-              showTime
-              hourFormat="24"
-              class="w-full"
-              :invalid="!!formErrors.measuredAt"
-            />
-            <small v-if="formErrors.measuredAt" class="text-red-500">
-              {{ formErrors.measuredAt }}
-            </small>
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">
+              {{ editingRecord ? "編輯生命徵象紀錄" : "新增生命徵象紀錄" }}
+            </h3>
+            <p class="text-sm text-gray-500">記錄個案的生理數據與健康狀態</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="space-y-6 py-2">
+        <!-- 基本資訊 -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center"
+            >
+              <i class="pi pi-user text-indigo-600"></i>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-800">基本資訊</p>
+              <p class="text-xs text-gray-500">個案與測量時間</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label
+                class="text-xs font-medium text-gray-600 flex items-center gap-1"
+              >
+                <i class="pi pi-user text-gray-400"></i>
+                個案 <span class="text-red-500">*</span>
+              </label>
+              <Select
+                v-model="form.clientId"
+                :options="clientOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="選擇個案"
+                class="w-full"
+                filter
+                :invalid="!!formErrors.clientId"
+              />
+              <small v-if="formErrors.clientId" class="text-red-500">
+                {{ formErrors.clientId }}
+              </small>
+            </div>
+            <div class="space-y-2">
+              <label
+                class="text-xs font-medium text-gray-600 flex items-center gap-1"
+              >
+                <i class="pi pi-clock text-gray-400"></i>
+                測量時間 <span class="text-red-500">*</span>
+              </label>
+              <DatePicker
+                v-model="form.measuredAt"
+                showTime
+                hourFormat="24"
+                class="w-full"
+                :invalid="!!formErrors.measuredAt"
+                dateFormat="yy/mm/dd"
+              />
+              <small v-if="formErrors.measuredAt" class="text-red-500">
+                {{ formErrors.measuredAt }}
+              </small>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-600">體重 (kg)</label>
+        <!-- 體重 -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"
+            >
+              <i class="pi pi-chart-bar text-purple-600"></i>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-800">體重測量</p>
+              <p class="text-xs text-gray-500">記錄個案的體重數據</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label
+              class="text-xs font-medium text-gray-600 flex items-center gap-1"
+            >
+              <i class="pi pi-percentage text-gray-400"></i>
+              體重 (kg)
+            </label>
             <InputText
               v-model="form.weight"
               type="number"
               step="0.1"
-              placeholder="例如 65.5"
-            />
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600"
-              >收縮壓 (mmHg)</label
-            >
-            <InputText
-              v-model="form.systolic"
-              type="number"
-              placeholder="例如 120"
-            />
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600"
-              >舒張壓 (mmHg)</label
-            >
-            <InputText
-              v-model="form.diastolic"
-              type="number"
-              placeholder="例如 80"
+              placeholder="例如：65.5"
+              class="w-full"
             />
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-600"
-              >脈搏 (次/分)</label
+        <!-- 血壓測量 -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"
             >
-            <InputText
-              v-model="form.pulse"
-              type="number"
-              placeholder="例如 72"
-            />
+              <i class="pi pi-arrow-right-arrow-left text-blue-600"></i>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-800">血壓測量</p>
+              <p class="text-xs text-gray-500">收縮壓與舒張壓數值</p>
+            </div>
           </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600">血氧 (%)</label>
-            <InputText
-              v-model="form.bloodOxygen"
-              type="number"
-              placeholder="例如 98"
-            />
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label
+                class="text-xs font-medium text-gray-600 flex items-center gap-1"
+              >
+                <i class="pi pi-angle-up text-gray-400"></i>
+                收縮壓 (mmHg)
+              </label>
+              <InputText
+                v-model="form.systolic"
+                type="number"
+                placeholder="例如：120"
+                class="w-full"
+              />
+            </div>
+            <div class="space-y-2">
+              <label
+                class="text-xs font-medium text-gray-600 flex items-center gap-1"
+              >
+                <i class="pi pi-angle-down text-gray-400"></i>
+                舒張壓 (mmHg)
+              </label>
+              <InputText
+                v-model="form.diastolic"
+                type="number"
+                placeholder="例如：80"
+                class="w-full"
+              />
+            </div>
           </div>
         </div>
 
-        <small v-if="formErrors.measurement" class="text-red-500 block -mt-2">
+        <!-- 脈搏與血氧 -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center"
+            >
+              <i class="pi pi-heart text-red-600"></i>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-800">脈搏與血氧</p>
+              <p class="text-xs text-gray-500">心跳與氧氣飽和度</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label
+                class="text-xs font-medium text-gray-600 flex items-center gap-1"
+              >
+                <i class="pi pi-heart text-gray-400"></i>
+                脈搏 (次/分)
+              </label>
+              <InputText
+                v-model="form.pulse"
+                type="number"
+                placeholder="例如：72"
+                class="w-full"
+              />
+            </div>
+            <div class="space-y-2">
+              <label
+                class="text-xs font-medium text-gray-600 flex items-center gap-1"
+              >
+                <i class="pi pi-percentage text-gray-400"></i>
+                血氧 (%)
+              </label>
+              <InputText
+                v-model="form.bloodOxygen"
+                type="number"
+                placeholder="例如：98"
+                class="w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        <small v-if="formErrors.measurement" class="text-red-500 block">
           {{ formErrors.measurement }}
         </small>
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-3">
+        <div class="flex justify-end gap-3 pt-4 border-t">
           <Button
             label="取消"
+            icon="pi pi-times"
             severity="secondary"
             outlined
             @click="closeDialog"
           />
           <Button
-            label="儲存"
+            :label="editingRecord ? '更新' : '儲存'"
             icon="pi pi-check"
-            class="shadow-md"
+            severity="success"
             :loading="saving"
             @click="submitForm"
           />
@@ -447,156 +554,237 @@
 
     <Dialog
       v-model:visible="showThresholdDialog"
-      header="警示閾值設定"
       :modal="true"
-      :style="{ width: '560px' }"
+      :style="{ width: '700px' }"
       :draggable="false"
     >
-      <div class="space-y-6">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center"
+          >
+            <i class="pi pi-sliders-h text-indigo-600"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">警示閾值設定</h3>
+            <p class="text-sm text-gray-500">設定生命徵象的異常提醒範圍</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="space-y-6 py-2">
         <div
-          class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-sm text-blue-700"
+          class="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg px-4 py-3"
         >
-          提醒：設定的區間會用於異常提醒，不會影響歷史資料，請依照醫囑進行調整。
+          <div class="flex items-start gap-3">
+            <i class="pi pi-info-circle text-blue-600 text-lg mt-0.5"></i>
+            <div class="text-sm text-blue-700">
+              <p class="font-medium mb-1">設定說明</p>
+              <p class="text-blue-600">
+                設定的範圍將用於異常提醒，不會影響歷史資料，請依照醫囑進行調整。
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div class="space-y-4">
-          <div>
-            <p
-              class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-            >
-              <i class="pi pi-arrow-right-arrow-left text-primary"></i>
-              血壓 (mmHg)
-            </p>
-            <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-5">
+          <!-- 血壓設定 -->
+          <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div class="flex items-center gap-2 mb-4">
+              <div
+                class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"
+              >
+                <i class="pi pi-arrow-right-arrow-left text-blue-600"></i>
+              </div>
               <div>
-                <label class="text-xs text-gray-500">收縮壓最小值</label>
+                <p class="text-sm font-bold text-gray-800">血壓範圍 (mmHg)</p>
+                <p class="text-xs text-gray-500">收縮壓與舒張壓的正常範圍</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-down text-gray-400"></i>
+                  收縮壓最小值
+                </label>
                 <InputText
                   v-model="thresholdForm.systolicMin"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.systolicMin"
+                  placeholder="例如：90"
                 />
-                <small
-                  v-if="thresholdErrors.systolicMin"
-                  class="text-red-500"
-                  >{{ thresholdErrors.systolicMin }}</small
-                >
+                <small v-if="thresholdErrors.systolicMin" class="text-red-500">
+                  {{ thresholdErrors.systolicMin }}
+                </small>
               </div>
-              <div>
-                <label class="text-xs text-gray-500">收縮壓最大值</label>
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-up text-gray-400"></i>
+                  收縮壓最大值
+                </label>
                 <InputText
                   v-model="thresholdForm.systolicMax"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.systolicMax"
+                  placeholder="例如：140"
                 />
-                <small
-                  v-if="thresholdErrors.systolicMax"
-                  class="text-red-500"
-                  >{{ thresholdErrors.systolicMax }}</small
-                >
+                <small v-if="thresholdErrors.systolicMax" class="text-red-500">
+                  {{ thresholdErrors.systolicMax }}
+                </small>
               </div>
-              <div>
-                <label class="text-xs text-gray-500">舒張壓最小值</label>
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-down text-gray-400"></i>
+                  舒張壓最小值
+                </label>
                 <InputText
                   v-model="thresholdForm.diastolicMin"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.diastolicMin"
+                  placeholder="例如：60"
                 />
-                <small
-                  v-if="thresholdErrors.diastolicMin"
-                  class="text-red-500"
-                  >{{ thresholdErrors.diastolicMin }}</small
-                >
+                <small v-if="thresholdErrors.diastolicMin" class="text-red-500">
+                  {{ thresholdErrors.diastolicMin }}
+                </small>
               </div>
-              <div>
-                <label class="text-xs text-gray-500">舒張壓最大值</label>
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-up text-gray-400"></i>
+                  舒張壓最大值
+                </label>
                 <InputText
                   v-model="thresholdForm.diastolicMax"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.diastolicMax"
+                  placeholder="例如：90"
                 />
-                <small
-                  v-if="thresholdErrors.diastolicMax"
-                  class="text-red-500"
-                  >{{ thresholdErrors.diastolicMax }}</small
-                >
+                <small v-if="thresholdErrors.diastolicMax" class="text-red-500">
+                  {{ thresholdErrors.diastolicMax }}
+                </small>
               </div>
             </div>
           </div>
 
-          <div>
-            <p
-              class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-            >
-              <i class="pi pi-heart text-green-500"></i>
-              脈搏
-            </p>
-            <div class="grid grid-cols-2 gap-4">
+          <!-- 脈搏設定 -->
+          <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div class="flex items-center gap-2 mb-4">
+              <div
+                class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center"
+              >
+                <i class="pi pi-heart text-green-600"></i>
+              </div>
               <div>
-                <label class="text-xs text-gray-500">脈搏最小值</label>
+                <p class="text-sm font-bold text-gray-800">脈搏範圍 (次/分)</p>
+                <p class="text-xs text-gray-500">每分鐘心跳次數的正常範圍</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-down text-gray-400"></i>
+                  最小值
+                </label>
                 <InputText
                   v-model="thresholdForm.pulseMin"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.pulseMin"
+                  placeholder="例如：60"
                 />
-                <small v-if="thresholdErrors.pulseMin" class="text-red-500">{{
-                  thresholdErrors.pulseMin
-                }}</small>
+                <small v-if="thresholdErrors.pulseMin" class="text-red-500">
+                  {{ thresholdErrors.pulseMin }}
+                </small>
               </div>
-              <div>
-                <label class="text-xs text-gray-500">脈搏最大值</label>
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-up text-gray-400"></i>
+                  最大值
+                </label>
                 <InputText
                   v-model="thresholdForm.pulseMax"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.pulseMax"
+                  placeholder="例如：100"
                 />
-                <small v-if="thresholdErrors.pulseMax" class="text-red-500">{{
-                  thresholdErrors.pulseMax
-                }}</small>
+                <small v-if="thresholdErrors.pulseMax" class="text-red-500">
+                  {{ thresholdErrors.pulseMax }}
+                </small>
               </div>
             </div>
           </div>
 
-          <div>
-            <p
-              class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-            >
-              <i class="pi pi-percentage text-orange-500"></i>
-              血氧
-            </p>
-            <div class="grid grid-cols-2 gap-4">
+          <!-- 血氧設定 -->
+          <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div class="flex items-center gap-2 mb-4">
+              <div
+                class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center"
+              >
+                <i class="pi pi-percentage text-orange-600"></i>
+              </div>
               <div>
-                <label class="text-xs text-gray-500">血氧最小值</label>
+                <p class="text-sm font-bold text-gray-800">血氧範圍 (%)</p>
+                <p class="text-xs text-gray-500">血液中氧氣飽和度的正常範圍</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-down text-gray-400"></i>
+                  最小值
+                </label>
                 <InputText
                   v-model="thresholdForm.bloodOxygenMin"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.bloodOxygenMin"
+                  placeholder="例如：95"
                 />
                 <small
                   v-if="thresholdErrors.bloodOxygenMin"
                   class="text-red-500"
-                  >{{ thresholdErrors.bloodOxygenMin }}</small
                 >
+                  {{ thresholdErrors.bloodOxygenMin }}
+                </small>
               </div>
-              <div>
-                <label class="text-xs text-gray-500">血氧最大值</label>
+              <div class="space-y-2">
+                <label
+                  class="text-xs font-medium text-gray-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-angle-up text-gray-400"></i>
+                  最大值
+                </label>
                 <InputText
                   v-model="thresholdForm.bloodOxygenMax"
                   type="number"
                   class="w-full"
                   :invalid="!!thresholdErrors.bloodOxygenMax"
+                  placeholder="例如：100"
                 />
                 <small
                   v-if="thresholdErrors.bloodOxygenMax"
                   class="text-red-500"
-                  >{{ thresholdErrors.bloodOxygenMax }}</small
                 >
+                  {{ thresholdErrors.bloodOxygenMax }}
+                </small>
               </div>
             </div>
           </div>
@@ -604,9 +792,10 @@
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-3">
+        <div class="flex justify-end gap-3 pt-4 border-t">
           <Button
             label="取消"
+            icon="pi pi-times"
             severity="secondary"
             outlined
             @click="showThresholdDialog = false"
@@ -614,7 +803,7 @@
           <Button
             label="儲存設定"
             icon="pi pi-check"
-            class="shadow-md"
+            severity="success"
             @click="saveThresholds"
           />
         </div>

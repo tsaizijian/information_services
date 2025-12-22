@@ -202,13 +202,21 @@
           <Column field="content" header="內容" style="min-width: 300px">
             <template #body="{ data }">
               <div class="max-w-md">
-                <p class="text-gray-700 line-clamp-2">{{ data.content }}</p>
+                <p class="text-gray-700 break-words whitespace-pre-wrap">
+                  {{ data.content }}
+                </p>
               </div>
             </template>
           </Column>
-          <Column field="recordedByName" header="記錄者" style="min-width: 100px">
+          <Column
+            field="recordedByName"
+            header="記錄者"
+            style="min-width: 100px"
+          >
             <template #body="{ data }">
-              <span class="text-gray-600">{{ data.recordedByName || "-" }}</span>
+              <span class="text-gray-600">{{
+                data.recordedByName || "-"
+              }}</span>
             </template>
           </Column>
           <Column header="操作" style="min-width: 150px">
@@ -622,7 +630,10 @@
               </label>
             </div>
           </div>
-          <small v-if="!exportAllClients && exportSelectedClients.length === 0" class="text-orange-500 block mt-2">
+          <small
+            v-if="!exportAllClients && exportSelectedClients.length === 0"
+            class="text-orange-500 block mt-2"
+          >
             <i class="pi pi-info-circle mr-1"></i>請至少選擇一位個案
           </small>
         </div>
@@ -984,7 +995,9 @@ const activeFilters = computed(() => {
 });
 
 // 載入資料
-const loadRecords = async (filters: Record<string, any> = activeFilters.value) => {
+const loadRecords = async (
+  filters: Record<string, any> = activeFilters.value
+) => {
   loading.value = true;
   try {
     const data = await getRecords(filters);
@@ -1020,267 +1033,321 @@ const openExportDialog = () => {
 
 const availableClientsForExport = computed(() => {
   // 從 filteredRecords 中取得有紀錄的個案
-  const clientIds = new Set(filteredRecords.value.map(r => r.clientId));
-  return clientOptions.value.filter(opt => clientIds.has(opt.value));
+  const clientIds = new Set(filteredRecords.value.map((r) => r.clientId));
+  return clientOptions.value.filter((opt) => clientIds.has(opt.value));
 });
 
 const getClientRecordCount = (clientId: string) => {
-  return filteredRecords.value.filter(r => r.clientId === clientId).length;
+  return filteredRecords.value.filter((r) => r.clientId === clientId).length;
 };
 
 const confirmExport = async () => {
   const selectedClientIds = exportAllClients.value
-    ? availableClientsForExport.value.map(c => c.value)
+    ? availableClientsForExport.value.map((c) => c.value)
     : exportSelectedClients.value;
-  
+
   showExportDialog.value = false;
   await exportToWord(selectedClientIds);
 };
 
 const exportToWord = async (selectedClientIds: string[]) => {
   try {
-    console.log('開始匯出 Word...');
-    toast.add({ severity: 'info', summary: '處理中', detail: '正在生成 Word 文件...', life: 3000 });
+    console.log("開始匯出 Word...");
+    toast.add({
+      severity: "info",
+      summary: "處理中",
+      detail: "正在生成 Word 文件...",
+      life: 3000,
+    });
 
-    const { Document, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType, TextRun, ImageRun } = await import('docx');
-    const { saveAs } = await import('file-saver');
-    const dayjs = (await import('dayjs')).default;
-    
+    const {
+      Document,
+      Paragraph,
+      Table,
+      TableCell,
+      TableRow,
+      WidthType,
+      BorderStyle,
+      AlignmentType,
+      TextRun,
+      ImageRun,
+    } = await import("docx");
+    const { saveAs } = await import("file-saver");
+    const dayjs = (await import("dayjs")).default;
+
     // 讀取機構名稱圖片
     let logoNameImage: any = null;
     try {
-      const response = await fetch('/logo_name.png');
+      const response = await fetch("/logo_name.png");
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       logoNameImage = new Uint8Array(arrayBuffer);
-      console.log('機構名稱圖片載入成功');
+      console.log("機構名稱圖片載入成功");
     } catch (error) {
-      console.warn('無法載入機構名稱圖片:', error);
+      console.warn("無法載入機構名稱圖片:", error);
     }
 
-  // 按個案分組照護紀錄（僅包含選定的個案）
-  const recordsByClient = filteredRecords.value
-    .filter(record => selectedClientIds.includes(record.clientId))
-    .reduce((acc: any, record: any) => {
-      const clientName = record.clientName || "未指定個案";
-      if (!acc[clientName]) {
-        acc[clientName] = [];
-      }
-      acc[clientName].push(record);
-      return acc;
-    }, {});
+    // 按個案分組照護紀錄（僅包含選定的個案）
+    const recordsByClient = filteredRecords.value
+      .filter((record) => selectedClientIds.includes(record.clientId))
+      .reduce((acc: any, record: any) => {
+        const clientName = record.clientName || "未指定個案";
+        if (!acc[clientName]) {
+          acc[clientName] = [];
+        }
+        acc[clientName].push(record);
+        return acc;
+      }, {});
 
-  const sections: any[] = [];
+    const sections: any[] = [];
 
-  // 為每個個案生成內容
-  for (const [clientName, records] of Object.entries(recordsByClient)) {
-    const clientRecords = records as any[];
-    const client = allClients.value.find((c: any) => c.name === clientName);
-    const gender = client?.gender === 'male' ? '男' : client?.gender === 'female' ? '女' : '';
-    const year = new Date().getFullYear() - 1911; // 民國年
+    // 為每個個案生成內容
+    for (const [clientName, records] of Object.entries(recordsByClient)) {
+      const clientRecords = records as any[];
+      const client = allClients.value.find((c: any) => c.name === clientName);
+      const gender =
+        client?.gender === "male"
+          ? "男"
+          : client?.gender === "female"
+          ? "女"
+          : "";
+      const year = new Date().getFullYear() - 1911; // 民國年
 
-    const children: any[] = [];
-    
-    // 標題區域（機構名稱圖置中）
-    if (logoNameImage) {
-      children.push(
-        new Paragraph({
-          children: [
-            new ImageRun({
-              type: 'png',
-              data: logoNameImage,
-              transformation: {
-                width: 300,
-                height: 80
-              }
-            })
-          ],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 200 }
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: "護理紀錄單", bold: true })
-          ],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 300 }
-        })
-      );
-    } else {
-      // 如果沒有圖片，只顯示標題
-      children.push(
-        new Paragraph({
-          text: "財團法人桃園市私立",
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 100 }
-        }),
-        new Paragraph({
-          text: "寶貝潛能發展中心",
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 200 }
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: "護理紀錄單", bold: true })
-          ],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 300 }
-        })
-      );
-    }
-    
-    // 個案資訊
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({ text: `年${year}       姓名：${clientName}       性別：${gender}` })
-        ],
-        spacing: { after: 200 }
-      })
-    );
+      const children: any[] = [];
 
-    // 建立表格 - 包含已有資料和空白列
-    const tableRows = [
-      // 表頭
-      new TableRow({
-        children: [
-          new TableCell({
-            children: [new Paragraph({ text: "日期", alignment: AlignmentType.CENTER })],
-            width: { size: 10, type: WidthType.PERCENTAGE }
+      // 標題區域（機構名稱圖置中）
+      if (logoNameImage) {
+        children.push(
+          new Paragraph({
+            children: [
+              new ImageRun({
+                type: "png",
+                data: logoNameImage,
+                transformation: {
+                  width: 300,
+                  height: 80,
+                },
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
           }),
-          new TableCell({
-            children: [new Paragraph({ text: "服務對象問題", alignment: AlignmentType.CENTER })],
-            width: { size: 20, type: WidthType.PERCENTAGE }
-          }),
-          new TableCell({
-            children: [new Paragraph({ text: "護理紀錄", alignment: AlignmentType.CENTER })],
-            width: { size: 55, type: WidthType.PERCENTAGE }
-          }),
-          new TableCell({
-            children: [new Paragraph({ text: "紀錄者", alignment: AlignmentType.CENTER })],
-            width: { size: 15, type: WidthType.PERCENTAGE }
+          new Paragraph({
+            children: [new TextRun({ text: "護理紀錄單", bold: true })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
           })
-        ]
-      }),
-      // 已有資料列
-      ...clientRecords.map(record => 
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({
-                text: dayjs(record.recordDate?.toDate?.() || record.recordDate).format('MM/DD'),
-                alignment: AlignmentType.CENTER
-              })]
-            }),
-            new TableCell({
-              children: [new Paragraph(
-                typeOptions.find(t => t.value === record.recordType)?.label || record.recordType
-              )]
-            }),
-            new TableCell({
-              children: [new Paragraph(record.content || '')]
-            }),
-            new TableCell({
-              children: [new Paragraph({
-                text: record.recordedByName || '',
-                alignment: AlignmentType.CENTER
-              })]
-            })
-          ]
-        })
-      ),
-      // 添加空白列供手寫使用（至少15列）
-      ...Array.from({ length: Math.max(15 - clientRecords.length, 5) }, () => 
-        new TableRow({
-          height: { value: 600, rule: "atLeast" },
-          children: [
-            new TableCell({ children: [new Paragraph("")] }),
-            new TableCell({ children: [new Paragraph("")] }),
-            new TableCell({ children: [new Paragraph("")] }),
-            new TableCell({ children: [new Paragraph("")] })
-          ]
-        })
-      )
-    ];
-
-    const table = new Table({
-      rows: tableRows,
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      margins: {
-        top: 50,
-        bottom: 50,
-        right: 50,
-        left: 50
-      },
-      columnWidths: [1000, 2000, 5500, 1500],
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1 },
-        bottom: { style: BorderStyle.SINGLE, size: 1 },
-        left: { style: BorderStyle.SINGLE, size: 1 },
-        right: { style: BorderStyle.SINGLE, size: 1 },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+        );
+      } else {
+        // 如果沒有圖片，只顯示標題
+        children.push(
+          new Paragraph({
+            text: "財團法人桃園市私立",
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          }),
+          new Paragraph({
+            text: "寶貝潛能發展中心",
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "護理紀錄單", bold: true })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+          })
+        );
       }
+
+      // 個案資訊
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `年${year}       姓名：${clientName}       性別：${gender}`,
+            }),
+          ],
+          spacing: { after: 200 },
+        })
+      );
+
+      // 建立表格 - 包含已有資料和空白列
+      const tableRows = [
+        // 表頭
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: "日期",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: { size: 10, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: "服務對象問題",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: { size: 20, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: "護理紀錄",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: { size: 55, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: "紀錄者",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: { size: 15, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }),
+        // 已有資料列
+        ...clientRecords.map(
+          (record) =>
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [
+                    new Paragraph({
+                      text: dayjs(
+                        record.recordDate?.toDate?.() || record.recordDate
+                      ).format("MM/DD"),
+                      alignment: AlignmentType.CENTER,
+                    }),
+                  ],
+                }),
+                new TableCell({
+                  children: [
+                    new Paragraph(
+                      typeOptions.find((t) => t.value === record.recordType)
+                        ?.label || record.recordType
+                    ),
+                  ],
+                }),
+                new TableCell({
+                  children: [new Paragraph(record.content || "")],
+                }),
+                new TableCell({
+                  children: [
+                    new Paragraph({
+                      text: record.recordedByName || "",
+                      alignment: AlignmentType.CENTER,
+                    }),
+                  ],
+                }),
+              ],
+            })
+        ),
+        // 添加空白列供手寫使用（至少15列）
+        ...Array.from(
+          { length: Math.max(15 - clientRecords.length, 5) },
+          () =>
+            new TableRow({
+              height: { value: 600, rule: "atLeast" },
+              children: [
+                new TableCell({ children: [new Paragraph("")] }),
+                new TableCell({ children: [new Paragraph("")] }),
+                new TableCell({ children: [new Paragraph("")] }),
+                new TableCell({ children: [new Paragraph("")] }),
+              ],
+            })
+        ),
+      ];
+
+      const table = new Table({
+        rows: tableRows,
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        margins: {
+          top: 50,
+          bottom: 50,
+          right: 50,
+          left: 50,
+        },
+        columnWidths: [1000, 2000, 5500, 1500],
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+          insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+        },
+      });
+
+      children.push(table);
+
+      // 簽名欄
+      children.push(
+        new Paragraph({
+          text: "",
+          spacing: { before: 400 },
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: "主任：_________________       " }),
+            new TextRun({ text: "護理師：_________________" }),
+          ],
+        })
+      );
+
+      sections.push({
+        properties: {},
+        children,
+      });
+    }
+
+    const doc = new Document({
+      sections: sections.map((section) => ({
+        ...section,
+        properties: {
+          page: {
+            margin: {
+              top: 720,
+              right: 720,
+              bottom: 720,
+              left: 720,
+            },
+          },
+        },
+      })),
     });
 
-    children.push(table);
+    const blob = await (await import("docx")).Packer.toBlob(doc);
+    saveAs(blob, `護理紀錄單_${dayjs().format("YYYYMMDD")}.docx`);
 
-    // 簽名欄
-    children.push(
-      new Paragraph({
-        text: "",
-        spacing: { before: 400 }
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({ text: "主任：_________________       " }),
-          new TextRun({ text: "護理師：_________________" })
-        ]
-      })
-    );
-
-    sections.push({
-      properties: {},
-      children
+    console.log("Word 文件已匯出");
+    toast.add({
+      severity: "success",
+      summary: "匯出成功",
+      detail: "護理紀錄單已下載",
+      life: 3000,
+    });
+  } catch (error) {
+    console.error("匯出 Word 失敗:", error);
+    toast.add({
+      severity: "error",
+      summary: "匯出失敗",
+      detail: "無法匯出 Word 文件，請檢查瀏覽器控制台",
+      life: 5000,
     });
   }
-
-  const doc = new Document({
-    sections: sections.map(section => ({
-      ...section,
-      properties: {
-        page: {
-          margin: {
-            top: 720,
-            right: 720,
-            bottom: 720,
-            left: 720
-          }
-        }
-      }
-    }))
-  });
-
-  const blob = await (await import('docx')).Packer.toBlob(doc);
-  saveAs(blob, `護理紀錄單_${dayjs().format("YYYYMMDD")}.docx`);
-  
-  console.log('Word 文件已匯出');
-  toast.add({
-    severity: 'success',
-    summary: '匯出成功',
-    detail: '護理紀錄單已下載',
-    life: 3000
-  });
-} catch (error) {
-  console.error('匯出 Word 失敗:', error);
-  toast.add({
-    severity: 'error',
-    summary: '匯出失敗',
-    detail: '無法匯出 Word 文件，請檢查瀏覽器控制台',
-    life: 5000
-  });
-}
 };
+
+// 從查詢參數編輯
+const { checkEditQuery } = useEditFromQuery(recordsData, editRecord);
 
 // 初始化
 onMounted(async () => {
@@ -1289,12 +1356,15 @@ onMounted(async () => {
 
   // 檢查 URL 查詢參數，如果有 action=new 則自動打開新增對話框
   const route = useRoute();
-  if (route.query.action === 'new') {
+  if (route.query.action === "new") {
     openCreateRecord();
     // 清除查詢參數，避免刷新時重複打開
     const router = useRouter();
     router.replace({ query: {} });
   }
+
+  // 檢查是否需要自動打開編輯對話框
+  checkEditQuery();
 });
 </script>
 
