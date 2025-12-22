@@ -486,13 +486,13 @@ const handleRegister = async () => {
       toast.add({
         severity: "success",
         summary: "註冊成功",
-        detail: "歡迎加入！您的帳號角色為「家屬」，如需調整請聯絡管理員。",
-        life: 3000,
+        detail: "驗證郵件已發送至您的信箱（請檢查垃圾郵件資料夾），請先完成郵箱驗證後再登入。",
+        life: 6000,
       });
 
-      // 等待 Toast 顯示後再跳轉
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await navigateTo("/dashboard");
+      // 等待 Toast 顯示後跳轉到登入頁面
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await navigateTo("/login");
     } else {
       toast.add({
         severity: "error",

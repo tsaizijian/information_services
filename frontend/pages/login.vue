@@ -132,6 +132,39 @@
 
                 <!-- 登入表單 -->
                 <form @submit.prevent="handleLogin" class="space-y-6">
+                  <!-- 郵箱未驗證提示 -->
+                  <div
+                    v-if="unverifiedUser"
+                    class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4"
+                  >
+                    <div class="flex items-start gap-3">
+                      <div
+                        class="w-10 h-10 rounded-lg bg-yellow-600 flex items-center justify-center flex-shrink-0"
+                      >
+                        <i class="pi pi-exclamation-triangle text-white"></i>
+                      </div>
+                      <div class="flex-1">
+                        <h4 class="text-sm font-bold text-yellow-900 mb-2">
+                          郵箱尚未驗證
+                        </h4>
+                        <p class="text-xs text-yellow-800 mb-2">
+                          您的帳號尚未完成郵箱驗證，請先驗證後再登入。
+                        </p>
+                        <p class="text-xs text-yellow-700 mb-3">
+                          <strong>提醒：</strong>驗證郵件可能被歸類為垃圾郵件，請檢查您的垃圾郵件資料夾。
+                        </p>
+                        <Button
+                          type="button"
+                          label="重新發送驗證郵件"
+                          icon="pi pi-envelope"
+                          @click="resendVerificationEmail"
+                          size="small"
+                          class="bg-yellow-600 hover:bg-yellow-700 border-0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- 電子郵件 -->
                   <div class="space-y-2">
                     <label
@@ -199,12 +232,12 @@
                         記住我
                       </label>
                     </div>
-                    <a
-                      href="#"
+                    <NuxtLink
+                      to="/forgot-password"
                       class="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
                     >
                       忘記密碼？
-                    </a>
+                    </NuxtLink>
                   </div>
 
                   <!-- 登入按鈕 -->
@@ -225,32 +258,6 @@
                     </div>
                     <div class="relative flex justify-center text-sm">
                       <span class="px-4 bg-white text-gray-500">快速測試</span>
-                    </div>
-                  </div>
-
-                  <!-- 測試帳號提示 -->
-                  <div
-                    class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div class="flex items-start gap-3">
-                      <div
-                        class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0"
-                      >
-                        <i class="pi pi-info-circle text-white"></i>
-                      </div>
-                      <div class="flex-1">
-                        <h4 class="text-sm font-bold text-blue-900 mb-2">
-                          測試帳號資訊
-                        </h4>
-                        <div class="space-y-1">
-                          <p class="text-xs text-blue-800 font-medium">
-                            帳號：b30430624@gmail.com
-                          </p>
-                          <p class="text-xs text-blue-700">
-                            點擊登入按鈕後即可使用此帳號進行測試
-                          </p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </form>
@@ -292,17 +299,20 @@
 
 <script setup lang="ts">
 import { useToast } from "primevue/usetoast";
+import type { User } from "firebase/auth";
 
 const email = ref("");
 const password = ref("");
 const rememberMe = ref(false);
 const loading = ref(false);
+const unverifiedUser = ref<User | null>(null);
 
-const { login } = useAuth();
+const { login, sendVerificationEmail } = useAuth();
 const toast = useToast();
 
 const handleLogin = async () => {
   loading.value = true;
+  unverifiedUser.value = null;
 
   try {
     const result = await login(email.value, password.value);
@@ -318,12 +328,24 @@ const handleLogin = async () => {
       await new Promise((resolve) => setTimeout(resolve, 500));
       await navigateTo("/dashboard");
     } else {
-      toast.add({
-        severity: "error",
-        summary: "登入失敗",
-        detail: result.error || "請檢查您的帳號密碼",
-        life: 4000,
-      });
+      // 檢查是否為郵箱未驗證錯誤
+      if (result.code === "auth/email-not-verified" && result.user) {
+        unverifiedUser.value = result.user;
+        toast.add({
+          severity: "warn",
+          summary: "郵箱未驗證",
+          detail:
+            "請先驗證您的電子郵件後再登入。點擊下方按鈕重新發送驗證郵件。",
+          life: 6000,
+        });
+      } else {
+        toast.add({
+          severity: "error",
+          summary: "登入失敗",
+          detail: result.error || "請檢查您的帳號密碼",
+          life: 4000,
+        });
+      }
     }
   } catch (error: any) {
     console.error("登入失敗:", error);
@@ -349,6 +371,38 @@ const handleLogin = async () => {
     });
   } finally {
     loading.value = false;
+  }
+};
+
+// 重新發送驗證郵件
+const resendVerificationEmail = async () => {
+  if (!unverifiedUser.value) return;
+
+  try {
+    const result = await sendVerificationEmail(unverifiedUser.value);
+    if (result.success) {
+      toast.add({
+        severity: "success",
+        summary: "驗證郵件已發送",
+        detail: "請檢查您的信箱（包括垃圾郵件資料夾）並點擊驗證連結",
+        life: 5000,
+      });
+    } else {
+      toast.add({
+        severity: "error",
+        summary: "發送失敗",
+        detail: result.error || "無法發送驗證郵件",
+        life: 4000,
+      });
+    }
+  } catch (error: any) {
+    console.error("發送驗證郵件失敗:", error);
+    toast.add({
+      severity: "error",
+      summary: "發送失敗",
+      detail: error.message || "請稍後再試",
+      life: 4000,
+    });
   }
 };
 

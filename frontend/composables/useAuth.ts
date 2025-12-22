@@ -4,6 +4,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   type User,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -64,6 +66,9 @@ export const useAuth = () => {
         displayName: userData.displayName,
       });
 
+      // 發送驗證郵件
+      await sendEmailVerification(userCredential.user);
+
       // 建立 Firestore 使用者資料（預設角色為 family）
       const userDoc = {
         email: userData.email,
@@ -92,19 +97,12 @@ export const useAuth = () => {
         );
       }
 
-      user.value = userCredential.user;
-      userProfile.value = {
-        id: userCredential.user.uid,
-        email: userDoc.email,
-        displayName: userDoc.displayName,
-        phone: userDoc.phone,
-        role: userDoc.role as "admin" | "caregiver" | "family",
-        isActive: userDoc.isActive,
-        createdAt: userDoc.createdAt,
-        updatedAt: userDoc.updatedAt,
-      };
+      // 註冊後立即登出，要求用戶驗證郵箱後再登入
+      await signOut(auth);
+      user.value = null;
+      userProfile.value = null;
 
-      return { success: true, user: userCredential.user };
+      return { success: true, user: userCredential.user, emailSent: true };
     } catch (error: any) {
       console.error("Register error:", error);
 
@@ -134,6 +132,19 @@ export const useAuth = () => {
         email,
         password
       );
+
+      // 檢查郵箱是否已驗證
+      if (!userCredential.user.emailVerified) {
+        // 登出用戶
+        await signOut(auth);
+        return {
+          success: false,
+          error: "請先驗證您的電子郵件",
+          code: "auth/email-not-verified",
+          user: userCredential.user,
+        };
+      }
+
       user.value = userCredential.user;
 
       // 取得使用者資料
@@ -158,6 +169,55 @@ export const useAuth = () => {
     } catch (error: any) {
       console.error("Login error:", error);
       return { success: false, error: error.message };
+    }
+  };
+
+  // 發送郵箱驗證信（可以傳入特定的 user 或使用當前登入的用戶）
+  const sendVerificationEmail = async (targetUser?: User) => {
+    try {
+      const { auth } = getFirebaseInstances();
+      if (!auth) {
+        return { success: false, error: "Firebase not initialized" };
+      }
+
+      const userToVerify = targetUser || auth.currentUser;
+      if (!userToVerify) {
+        return { success: false, error: "未找到登入用戶" };
+      }
+
+      await sendEmailVerification(userToVerify);
+      return { success: true, message: "驗證郵件已發送，請檢查您的信箱" };
+    } catch (error: any) {
+      console.error("Send verification email error:", error);
+      let errorMessage = "發送驗證郵件失敗";
+      if (error.code === "auth/too-many-requests") {
+        errorMessage = "發送次數過多，請稍後再試";
+      }
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // 發送密碼重置郵件
+  const resetPassword = async (email: string) => {
+    try {
+      const { auth } = getFirebaseInstances();
+      if (!auth) {
+        return { success: false, error: "Firebase not initialized" };
+      }
+
+      await sendPasswordResetEmail(auth, email);
+      return { success: true, message: "密碼重置郵件已發送，請檢查您的信箱" };
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      let errorMessage = "發送密碼重置郵件失敗";
+      if (error.code === "auth/user-not-found") {
+        errorMessage = "找不到此電子郵件對應的帳號";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "電子郵件格式不正確";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "發送次數過多，請稍後再試";
+      }
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -238,6 +298,8 @@ export const useAuth = () => {
     register,
     login,
     logout,
+    sendVerificationEmail,
+    resetPassword,
     initAuth,
     hasRole,
     isAdmin,
