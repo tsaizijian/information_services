@@ -378,40 +378,38 @@
     >
       <div v-if="selectedRecord" class="space-y-4">
         <!-- 基本資訊 -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4 pb-4 border-b">
           <div>
-            <p class="text-sm text-gray-500">記錄類型</p>
-            <Tag
-              :value="getRecordTypeLabel(selectedRecord.type)"
-              :severity="getRecordTypeSeverity(selectedRecord.type)"
-              rounded
-            />
+            <label class="text-sm text-gray-600">記錄類型</label>
+            <div class="mt-1">
+              <Tag
+                :value="getRecordTypeLabel(selectedRecord.type)"
+                :severity="getRecordTypeSeverity(selectedRecord.type)"
+                rounded
+              />
+            </div>
           </div>
           <div>
-            <p class="text-sm text-gray-500">個案姓名</p>
-            <p class="font-semibold">{{ selectedRecord.clientName }}</p>
+            <label class="text-sm text-gray-600">個案姓名</label>
+            <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.clientName }}</p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">記錄日期</p>
-            <p class="font-semibold">{{ formatDate(selectedRecord.date) }}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500">記錄者</p>
-            <p class="font-semibold">{{ selectedRecord.recordedByName }}</p>
+            <label class="text-sm text-gray-600">記錄日期</label>
+            <p class="font-semibold text-gray-800">{{ formatDate(selectedRecord.date) }}</p>
           </div>
         </div>
-
-        <Divider />
 
         <!-- 護理紀錄詳情 -->
         <div v-if="selectedRecord.type === 'care'" class="space-y-3">
           <div>
-            <p class="text-sm text-gray-500">護理內容</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content || selectedRecord.rawData.notes || '無' }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">護理內容</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content || selectedRecord.rawData.notes || '無' }}</p>
+            </div>
           </div>
           <div v-if="selectedRecord.rawData.vitalSigns">
-            <p class="text-sm text-gray-500 mb-2">生理徵象</p>
-            <div class="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded">
+            <label class="text-sm text-gray-600 mb-2 block">生理徵象</label>
+            <div class="grid grid-cols-2 gap-2 bg-gray-50 rounded-lg p-3">
               <div v-if="selectedRecord.rawData.vitalSigns.temperature">
                 <span class="text-xs text-gray-500">體溫:</span>
                 <span class="ml-2">{{ selectedRecord.rawData.vitalSigns.temperature }}°C</span>
@@ -435,40 +433,44 @@
         <!-- 情緒紀錄詳情 -->
         <div v-if="selectedRecord.type === 'emotion'" class="space-y-3">
           <div>
-            <p class="text-sm text-gray-500">情境</p>
-            <p>{{ selectedRecord.rawData.context || '無' }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">情境</label>
+            <p class="text-gray-700 break-words">{{ getContextLabel(selectedRecord.rawData.context) || '無' }}</p>
           </div>
-          <div>
-            <p class="text-sm text-gray-500">症狀</p>
+          <div v-if="selectedRecord.rawData.symptoms?.length">
+            <label class="text-sm text-gray-600 mb-2 block">症狀</label>
             <div class="flex flex-wrap gap-2">
-              <Tag v-for="symptom in selectedRecord.rawData.symptoms" :key="symptom" :value="symptom" />
+              <Tag v-for="symptom in selectedRecord.rawData.symptoms" :key="symptom" :value="getSymptomLabel(symptom)" severity="warn" />
             </div>
           </div>
-          <div>
-            <p class="text-sm text-gray-500">處置方式</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.intervention || '無' }}</p>
+          <div v-if="selectedRecord.rawData.intervention">
+            <label class="text-sm text-gray-600 mb-2 block">處置方式</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.intervention }}</p>
+            </div>
           </div>
         </div>
 
         <!-- 解便紀錄詳情 -->
         <div v-if="selectedRecord.type === 'bowel'" class="space-y-3">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-3 gap-4">
             <div>
-              <p class="text-sm text-gray-500">解便量</p>
-              <p>{{ selectedRecord.rawData.amount || '無' }}</p>
+              <label class="text-sm text-gray-600">解便量</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.amount || '無' }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">顏色</p>
-              <p>{{ selectedRecord.rawData.color || '無' }}</p>
+              <label class="text-sm text-gray-600">顏色</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.color || '無' }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">性質</p>
-              <p>{{ selectedRecord.rawData.consistency || '無' }}</p>
+              <label class="text-sm text-gray-600">性質</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.consistency || '無' }}</p>
             </div>
           </div>
           <div v-if="selectedRecord.rawData.notes">
-            <p class="text-sm text-gray-500">備註</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.notes }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">備註</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.notes }}</p>
+            </div>
           </div>
         </div>
 
@@ -476,21 +478,25 @@
         <div v-if="selectedRecord.type === 'seizure'" class="space-y-3">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-500">發作時長</p>
-              <p>{{ selectedRecord.rawData.durationSeconds }} 秒</p>
+              <label class="text-sm text-gray-600">發作時長</label>
+              <p class="font-semibold text-gray-800">{{ selectedRecord.rawData.durationSeconds }} 秒</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">意識狀態</p>
-              <p>{{ selectedRecord.rawData.consciousnessState || '無' }}</p>
+              <label class="text-sm text-gray-600">意識狀態</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.consciousnessState || '無' }}</p>
             </div>
           </div>
           <div v-if="selectedRecord.rawData.description">
-            <p class="text-sm text-gray-500">發作描述</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.description }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">發作描述</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.description }}</p>
+            </div>
           </div>
           <div v-if="selectedRecord.rawData.intervention">
-            <p class="text-sm text-gray-500">處置方式</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.intervention }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">處置方式</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.intervention }}</p>
+            </div>
           </div>
         </div>
 
@@ -498,17 +504,19 @@
         <div v-if="selectedRecord.type === 'menstrual'" class="space-y-3">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-500">經血量</p>
-              <p>{{ selectedRecord.rawData.flowAmount || '無' }}</p>
+              <label class="text-sm text-gray-600">經血量</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.flowAmount || '無' }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">疼痛程度</p>
-              <p>{{ selectedRecord.rawData.painLevel || '無' }}</p>
+              <label class="text-sm text-gray-600">疼痛程度</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.painLevel || '無' }}</p>
             </div>
           </div>
           <div v-if="selectedRecord.rawData.notes">
-            <p class="text-sm text-gray-500">備註</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.notes }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">備註</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.notes }}</p>
+            </div>
           </div>
         </div>
 
@@ -516,26 +524,30 @@
         <div v-if="selectedRecord.type === 'handover'" class="space-y-3">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-500">班別</p>
-              <p>{{ getShiftLabel(selectedRecord.rawData.shiftType) }}</p>
+              <label class="text-sm text-gray-600">班別</label>
+              <p class="font-semibold text-gray-800">{{ getShiftLabel(selectedRecord.rawData.shiftType) }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">優先級</p>
-              <Tag
-                :value="getPriorityMeta(selectedRecord.rawData.priority).label"
-                :severity="getPrioritySeverity(selectedRecord.rawData.priority)"
-                rounded
-              />
+              <label class="text-sm text-gray-600">優先級</label>
+              <div class="mt-1">
+                <Tag
+                  :value="getPriorityMeta(selectedRecord.rawData.priority).label"
+                  :severity="getPrioritySeverity(selectedRecord.rawData.priority)"
+                  rounded
+                />
+              </div>
             </div>
           </div>
           <div>
-            <p class="text-sm text-gray-500">交接內容</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">交接內容</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content }}</p>
+            </div>
           </div>
           <div v-if="selectedRecord.rawData.targetClients && selectedRecord.rawData.targetClients.length > 0">
-            <p class="text-sm text-gray-500">相關個案</p>
+            <label class="text-sm text-gray-600 mb-2 block">相關個案</label>
             <div class="flex flex-wrap gap-2">
-              <Tag v-for="client in selectedRecord.rawData.targetClients" :key="client.clientId" :value="client.clientName" />
+              <Tag v-for="client in selectedRecord.rawData.targetClients" :key="client.clientId" :value="client.clientName" severity="info" />
             </div>
           </div>
         </div>
@@ -544,23 +556,33 @@
         <div v-if="selectedRecord.type === 'familyContact'" class="space-y-3">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-500">聯絡對象</p>
-              <p>{{ selectedRecord.rawData.contactTarget || '無' }}</p>
+              <label class="text-sm text-gray-600">聯絡對象</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.contactTarget || '無' }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">聯絡方式</p>
-              <p>{{ selectedRecord.rawData.contactMethod || '無' }}</p>
+              <label class="text-sm text-gray-600">聯絡方式</label>
+              <p class="font-semibold text-gray-800 break-words">{{ selectedRecord.rawData.contactMethod || '無' }}</p>
             </div>
           </div>
           <div>
-            <p class="text-sm text-gray-500">聯絡內容</p>
-            <p class="whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content }}</p>
+            <label class="text-sm text-gray-600 mb-2 block">聯絡內容</label>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ selectedRecord.rawData.content }}</p>
+            </div>
           </div>
+        </div>
+
+        <!-- 記錄資訊 -->
+        <div class="pt-4 border-t text-sm text-gray-500">
+          <p>記錄者：{{ selectedRecord.recordedByName }}</p>
         </div>
       </div>
 
       <template #footer>
-        <Button label="關閉" icon="pi pi-times" @click="showDetailDialog = false" text />
+        <div class="flex justify-end gap-3">
+          <Button label="關閉" icon="pi pi-times" severity="secondary" outlined @click="showDetailDialog = false" />
+          <Button label="編輯" icon="pi pi-pencil" @click="editRecordFromView" />
+        </div>
       </template>
     </Dialog>
   </div>
@@ -581,7 +603,7 @@ const { userProfile } = useAuth();
 const { toDate, formatDateTime } = useUtils();
 const { getClients } = useClients();
 const { getRecords, togglePin: toggleCarePin } = useRecords();
-const { getEmotionRecords, togglePin: toggleEmotionPin } = useEmotionRecords();
+const { getEmotionRecords, togglePin: toggleEmotionPin, getContextLabel, getSymptomLabel } = useEmotionRecords();
 const { getBowelRecords, togglePin: toggleBowelPin } = useBowelRecords();
 const { getSeizureRecords, togglePin: toggleSeizurePin } = useSeizureRecords();
 const { getMenstrualRecords, togglePin: toggleMenstrualPin } = useMenstrualRecords();
@@ -1033,6 +1055,34 @@ const handleTogglePin = async (record: any) => {
 // 分頁切換
 const onPageChange = (event: any) => {
   currentPage.value = event.page;
+};
+
+// 從查看詳情對話框編輯記錄
+const editRecordFromView = () => {
+  if (!selectedRecord.value) return;
+
+  const record = selectedRecord.value;
+  const recordId = record.id;
+  const recordType = record.type;
+
+  // 根據記錄類型導航到對應的頁面
+  const routeMap: Record<string, string> = {
+    emotion: '/medical-care/emotion',
+    bowel: '/medical-care/bowel',
+    seizure: '/medical-care/seizure',
+    menstrual: '/medical-care/menstrual',
+    handover: '/handover',
+    care: '/records',
+    familyContact: '/family-contacts',
+  };
+
+  const targetRoute = routeMap[recordType];
+  if (targetRoute) {
+    // 導航到對應頁面,並帶上記錄 ID 作為查詢參數
+    navigateTo(`${targetRoute}?edit=${recordId}`);
+  } else {
+    alert('不支援編輯此類型的記錄');
+  }
 };
 
 // 匯出報表

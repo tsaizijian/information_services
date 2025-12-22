@@ -90,26 +90,6 @@
           </div>
         </template>
       </Card>
-
-      <!-- 生命徵象紀錄 -->
-      <Card
-        class="cursor-pointer hover:shadow-lg transition-shadow border-t-4 border-green-500"
-        @click="navigateTo('/medical-care/vital-signs')"
-      >
-        <template #content>
-          <div class="text-center py-4">
-            <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <i class="pi pi-heart-fill text-3xl text-green-600"></i>
-            </div>
-            <h3 class="text-lg font-bold text-gray-800 mb-2">生命徵象紀錄</h3>
-            <p class="text-sm text-gray-500 mb-4">記錄血壓、體溫、脈搏等數值</p>
-            <div class="flex items-center justify-center gap-2 text-green-600">
-              <span class="text-sm font-medium">進入管理</span>
-              <i class="pi pi-arrow-right"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
     </div>
 
     <!-- 最近紀錄摘要 -->

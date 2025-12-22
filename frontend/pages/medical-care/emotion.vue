@@ -468,25 +468,25 @@
           <div class="grid grid-cols-3 gap-4 pb-4 border-b">
             <div>
               <label class="text-sm text-gray-600">個案姓名</label>
-              <p class="font-semibold text-gray-800">{{ viewingRecord.clientName }}</p>
+              <p class="font-semibold text-gray-800 break-words">{{ viewingRecord.clientName }}</p>
             </div>
             <div>
               <label class="text-sm text-gray-600">發生時間</label>
-              <p class="font-semibold text-gray-800">
+              <p class="font-semibold text-gray-800 break-words">
                 {{ formatDate(viewingRecord.occurredDate) }} {{ viewingRecord.occurredTime }}
               </p>
             </div>
             <div>
               <label class="text-sm text-gray-600">發生情境</label>
-              <p class="font-semibold text-gray-800">{{ getContextLabel(viewingRecord.context) }}</p>
+              <p class="font-semibold text-gray-800 break-words">{{ getContextLabel(viewingRecord.context) }}</p>
             </div>
             <div v-if="viewingRecord.weather">
               <label class="text-sm text-gray-600">天氣/氣溫</label>
-              <p class="font-semibold text-gray-800">{{ viewingRecord.weather }}</p>
+              <p class="font-semibold text-gray-800 break-words">{{ viewingRecord.weather }}</p>
             </div>
             <div v-if="viewingRecord.durationMinutes">
               <label class="text-sm text-gray-600">持續時間</label>
-              <p class="font-semibold text-gray-800">{{ viewingRecord.durationMinutes }} 分鐘</p>
+              <p class="font-semibold text-gray-800 break-words">{{ viewingRecord.durationMinutes }} 分鐘</p>
             </div>
           </div>
 
@@ -549,13 +549,13 @@
           <div v-if="viewingRecord.notes">
             <label class="text-sm text-gray-600 mb-2 block">備註說明</label>
             <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-gray-700 whitespace-pre-wrap">{{ viewingRecord.notes }}</p>
+              <p class="text-gray-700 whitespace-pre-wrap break-words">{{ viewingRecord.notes }}</p>
             </div>
           </div>
 
           <!-- 記錄資訊 -->
           <div class="pt-4 border-t text-sm text-gray-500">
-            <p>記錄者：{{ viewingRecord.recordedByName }}</p>
+            <p class="break-words">記錄者：{{ viewingRecord.recordedByName }}</p>
           </div>
         </div>
       </template>
@@ -798,7 +798,7 @@ const saveRecord = async () => {
   saving.value = true;
   try {
     // 僅包含業務欄位，不包含 isPinned 和 pinnedBy，以保留釘選狀態
-    const data = {
+    const data: any = {
       clientId: form.value.clientId,
       clientName: form.value.clientName,
       classId: form.value.classId,
@@ -816,6 +816,13 @@ const saveRecord = async () => {
       recordedBy: userProfile.value?.id || '',
       recordedByName: userProfile.value?.displayName || '',
     };
+
+    // 移除值為 undefined 的欄位，Firebase 不接受 undefined
+    Object.keys(data).forEach(key => {
+      if (data[key] === undefined) {
+        delete data[key];
+      }
+    });
 
     if (editingRecord.value?.id) {
       await updateEmotionRecord(editingRecord.value.id, data);
@@ -884,6 +891,19 @@ watch([filterStartDate, filterEndDate], () => {
 onMounted(async () => {
   await fetchClients();
   await loadRecords();
+
+  // 檢查是否有編輯查詢參數
+  const route = useRoute();
+  const editId = route.query.edit as string;
+  if (editId) {
+    // 等待記錄載入完成後,找到對應的記錄並打開編輯對話框
+    nextTick(() => {
+      const record = recordsData.value.find(r => r.id === editId);
+      if (record) {
+        editRecord(record);
+      }
+    });
+  }
 });
 </script>
 

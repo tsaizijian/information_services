@@ -417,13 +417,13 @@
           <div class="grid grid-cols-2 gap-4 pb-4 border-b">
             <div>
               <label class="text-sm text-gray-600">個案姓名</label>
-              <p class="text-lg font-semibold text-gray-800 mt-1">
+              <p class="text-lg font-semibold text-gray-800 mt-1 break-words">
                 {{ viewingRecord.clientName }}
               </p>
             </div>
             <div>
               <label class="text-sm text-gray-600">記錄日期</label>
-              <p class="text-lg font-semibold text-gray-800 mt-1">
+              <p class="text-lg font-semibold text-gray-800 mt-1 break-words">
                 {{ formatDate(viewingRecord.recordDate) }}
               </p>
             </div>
@@ -439,7 +439,7 @@
             </div>
             <div>
               <label class="text-sm text-gray-600">記錄者</label>
-              <p class="text-lg font-semibold text-gray-800 mt-1">
+              <p class="text-lg font-semibold text-gray-800 mt-1 break-words">
                 {{ viewingRecord.recordedByName || "-" }}
               </p>
             </div>
@@ -452,7 +452,7 @@
               照護內容
             </label>
             <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-gray-700 whitespace-pre-wrap">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">
                 {{ viewingRecord.content }}
               </p>
             </div>
@@ -465,7 +465,7 @@
               備註說明
             </label>
             <div class="bg-blue-50 rounded-lg p-4">
-              <p class="text-gray-700 whitespace-pre-wrap">
+              <p class="text-gray-700 whitespace-pre-wrap break-words">
                 {{ viewingRecord.notes }}
               </p>
             </div>
