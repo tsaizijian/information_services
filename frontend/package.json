@@ -13,6 +13,7 @@
     "@nuxt/eslint": "1.10.0",
     "@nuxt/image": "1.11.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@primeuix/styles": "1.2.5",
     "@primevue/themes": "4.3.9",
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.19",
