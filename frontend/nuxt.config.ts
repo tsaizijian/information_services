@@ -5,6 +5,13 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
+  app: {
+    head: {
+      viewport: "width=device-width, initial-scale=1",
+      charset: "utf-8",
+    },
+  },
+
   modules: [
     "@nuxt/eslint",
     "@nuxt/icon",
@@ -27,7 +34,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ["primeicons/primeicons.css", "~/assets/css/main.css"],
+  css: ["~/assets/css/main.css", "primeicons/primeicons.css"],
 
   runtimeConfig: {
     public: {

@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 確保 PrimeVue 元件有正確的樣式 */
+/* 修復 Tailwind 與 PrimeVue 的樣式衝突 */
 @layer base {
-  /* 重置可能干擾 PrimeVue 的 Tailwind 樣式 */
-  .p-component {
-    box-sizing: border-box;
+  /* 確保按鈕元素不被 Tailwind reset 過度重置 */
+  button {
+    background-color: unset;
+    color: unset;
+    border: unset;
   }
 }
