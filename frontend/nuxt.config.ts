@@ -13,11 +13,10 @@ export default defineNuxtConfig({
   },
 
   modules: [
+    "@primevue/nuxt-module",
     "@nuxt/eslint",
-    "@nuxt/icon",
     "@nuxt/image",
     "@nuxtjs/tailwindcss",
-    "@primevue/nuxt-module",
   ],
 
   primevue: {
@@ -31,6 +30,12 @@ export default defineNuxtConfig({
         },
       },
       ripple: true,
+    },
+  },
+
+  tailwindcss: {
+    config: {
+      darkMode: "class",
     },
   },
 
