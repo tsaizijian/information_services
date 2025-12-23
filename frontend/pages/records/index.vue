@@ -1164,7 +1164,7 @@ const exportToWord = async (selectedClientIds: string[]) => {
         new Paragraph({
           children: [
             new TextRun({
-              text: `年${year}       姓名：${clientName}       性別：${gender}`,
+              text: `${year} 年      姓名：${clientName}       性別：${gender}`,
             }),
           ],
           spacing: { after: 200 },
@@ -1231,14 +1231,20 @@ const exportToWord = async (selectedClientIds: string[]) => {
                 }),
                 new TableCell({
                   children: [
-                    new Paragraph(
-                      typeOptions.find((t) => t.value === record.recordType)
-                        ?.label || record.recordType
-                    ),
+                    new Paragraph({
+                      text:
+                        typeOptions.find((t) => t.value === record.recordType)
+                          ?.label || record.recordType,
+                    }),
                   ],
                 }),
                 new TableCell({
-                  children: [new Paragraph(record.content || "")],
+                  children: [
+                    new Paragraph({
+                      text: record.content || "",
+                      spacing: { line: 276 },
+                    }),
+                  ],
                 }),
                 new TableCell({
                   children: [

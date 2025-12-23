@@ -1,7 +1,20 @@
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
 import { where } from "firebase/firestore";
-import { Document, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, BorderStyle, Packer, VerticalAlign, ImageRun, TextRun } from "docx";
+import {
+  Document,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+  AlignmentType,
+  BorderStyle,
+  Packer,
+  VerticalAlign,
+  ImageRun,
+  TextRun,
+} from "docx";
 
 export const useExport = () => {
   const { queryDocuments } = useFirestore();
@@ -177,20 +190,20 @@ export const useExport = () => {
     // 讀取機構名稱圖片
     let logoNameImage: any = null;
     try {
-      const response = await fetch('/logo_name.png');
+      const response = await fetch("/logo_name.png");
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       logoNameImage = new Uint8Array(arrayBuffer);
-      console.log('機構名稱圖片載入成功');
+      console.log("機構名稱圖片載入成功");
     } catch (error) {
-      console.warn('無法載入機構名稱圖片:', error);
+      console.warn("無法載入機構名稱圖片:", error);
     }
 
     // 取得該年度的所有生命徵象記錄
     const { getVitalSignRecords } = useVitalSigns();
     const startDate = new Date(year, 0, 1); // 1月1日
     const endDate = new Date(year, 11, 31, 23, 59, 59); // 12月31日
-    
+
     const allRecords = await getVitalSignRecords({
       clientId,
       startDate,
@@ -202,9 +215,10 @@ export const useExport = () => {
     for (let month = 1; month <= 12; month++) {
       // 篩選該月份的記錄
       const monthRecords = allRecords.filter((record: any) => {
-        const recordDate = record.measuredAt instanceof Date 
-          ? record.measuredAt 
-          : record.measuredAt.toDate?.() || new Date(record.measuredAt);
+        const recordDate =
+          record.measuredAt instanceof Date
+            ? record.measuredAt
+            : record.measuredAt.toDate?.() || new Date(record.measuredAt);
         return recordDate.getMonth() + 1 === month;
       });
 
@@ -220,7 +234,12 @@ export const useExport = () => {
           .map((r: any) => r.weight)
           .filter((w: any) => w !== null && w !== undefined);
         if (weights.length > 0) {
-          weight = Math.round((weights.reduce((a: number, b: number) => a + b, 0) / weights.length) * 10) / 10;
+          weight =
+            Math.round(
+              (weights.reduce((a: number, b: number) => a + b, 0) /
+                weights.length) *
+                10
+            ) / 10;
         }
 
         // 計算血壓平均值
@@ -230,10 +249,16 @@ export const useExport = () => {
         const diastolics = monthRecords
           .map((r: any) => r.diastolic)
           .filter((d: any) => d !== null && d !== undefined);
-        
+
         if (systolics.length > 0 && diastolics.length > 0) {
-          const avgSystolic = Math.round(systolics.reduce((a: number, b: number) => a + b, 0) / systolics.length);
-          const avgDiastolic = Math.round(diastolics.reduce((a: number, b: number) => a + b, 0) / diastolics.length);
+          const avgSystolic = Math.round(
+            systolics.reduce((a: number, b: number) => a + b, 0) /
+              systolics.length
+          );
+          const avgDiastolic = Math.round(
+            diastolics.reduce((a: number, b: number) => a + b, 0) /
+              diastolics.length
+          );
           bloodPressure = `${avgSystolic}/${avgDiastolic}`;
         }
 
@@ -242,7 +267,10 @@ export const useExport = () => {
           .map((r: any) => r.heartRate)
           .filter((h: any) => h !== null && h !== undefined);
         if (heartRates.length > 0) {
-          pulse = Math.round(heartRates.reduce((a: number, b: number) => a + b, 0) / heartRates.length);
+          pulse = Math.round(
+            heartRates.reduce((a: number, b: number) => a + b, 0) /
+              heartRates.length
+          );
         }
 
         // 計算血氧平均值
@@ -250,7 +278,9 @@ export const useExport = () => {
           .map((r: any) => r.bloodOxygen)
           .filter((o: any) => o !== null && o !== undefined);
         if (oxygens.length > 0) {
-          bloodOxygen = Math.round(oxygens.reduce((a: number, b: number) => a + b, 0) / oxygens.length);
+          bloodOxygen = Math.round(
+            oxygens.reduce((a: number, b: number) => a + b, 0) / oxygens.length
+          );
         }
 
         // 取最後一筆記錄的紀錄者
@@ -270,8 +300,18 @@ export const useExport = () => {
 
     // 月份名稱
     const monthNames = [
-      "1月", "2月", "3月", "4月", "5月", "6月",
-      "7月", "8月", "9月", "10月", "11月", "12月"
+      "1月",
+      "2月",
+      "3月",
+      "4月",
+      "5月",
+      "6月",
+      "7月",
+      "8月",
+      "9月",
+      "10月",
+      "11月",
+      "12月",
     ];
 
     // 建立表格行
@@ -280,32 +320,47 @@ export const useExport = () => {
       new TableRow({
         children: [
           new TableCell({
-            children: [new Paragraph({ text: "月份", alignment: AlignmentType.CENTER })],
+            children: [
+              new Paragraph({ text: "月份", alignment: AlignmentType.CENTER }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 10, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ text: "體重", alignment: AlignmentType.CENTER })],
+            children: [
+              new Paragraph({ text: "體重", alignment: AlignmentType.CENTER }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 15, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ text: "血壓", alignment: AlignmentType.CENTER })],
+            children: [
+              new Paragraph({ text: "血壓", alignment: AlignmentType.CENTER }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 20, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ text: "脈搏", alignment: AlignmentType.CENTER })],
+            children: [
+              new Paragraph({ text: "脈搏", alignment: AlignmentType.CENTER }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 18, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ text: "血氧", alignment: AlignmentType.CENTER })],
+            children: [
+              new Paragraph({ text: "血氧", alignment: AlignmentType.CENTER }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 18, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ text: "紀錄者", alignment: AlignmentType.CENTER })],
+            children: [
+              new Paragraph({
+                text: "紀錄者",
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 19, type: WidthType.PERCENTAGE },
           }),
@@ -319,42 +374,57 @@ export const useExport = () => {
         new TableRow({
           children: [
             new TableCell({
-              children: [new Paragraph({ text: monthNames[index], alignment: AlignmentType.CENTER })],
+              children: [
+                new Paragraph({
+                  text: monthNames[index],
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: data.weight ? `${data.weight} kg` : "kg",
-                alignment: AlignmentType.CENTER 
-              })],
+              children: [
+                new Paragraph({
+                  text: data.weight ? `${data.weight} kg` : "kg",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: data.bloodPressure || "/",
-                alignment: AlignmentType.CENTER 
-              })],
+              children: [
+                new Paragraph({
+                  text: data.bloodPressure || "/",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: data.pulse ? `${data.pulse} 分/次` : "分/次",
-                alignment: AlignmentType.CENTER 
-              })],
+              children: [
+                new Paragraph({
+                  text: data.pulse ? `${data.pulse} 分/次` : "分/次",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: data.bloodOxygen ? `${data.bloodOxygen} %` : "%",
-                alignment: AlignmentType.CENTER 
-              })],
+              children: [
+                new Paragraph({
+                  text: data.bloodOxygen ? `${data.bloodOxygen} %` : "%",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: data.measuredBy || "",
-                alignment: AlignmentType.CENTER 
-              })],
+              children: [
+                new Paragraph({
+                  text: data.measuredBy || "",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
           ],
@@ -369,56 +439,68 @@ export const useExport = () => {
         height: { value: 600, rule: "atLeast" },
         children: [
           new TableCell({
-            children: [new Paragraph({ 
-              text: "月份", 
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 80, after: 80 },
-            })],
+            children: [
+              new Paragraph({
+                text: "月份",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 12, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ 
-              text: "體重(kg)", 
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 80, after: 80 },
-            })],
+            children: [
+              new Paragraph({
+                text: "體重(kg)",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 16, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ 
-              text: "血壓(mmHg)", 
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 80, after: 80 },
-            })],
+            children: [
+              new Paragraph({
+                text: "血壓(mmHg)",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 20, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ 
-              text: "脈搏(次/分)", 
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 80, after: 80 },
-            })],
+            children: [
+              new Paragraph({
+                text: "脈搏(次/分)",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 18, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ 
-              text: "血氧(%)", 
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 80, after: 80 },
-            })],
+            children: [
+              new Paragraph({
+                text: "血氧(%)",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 16, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: [new Paragraph({ 
-              text: "紀錄者", 
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 80, after: 80 },
-            })],
+            children: [
+              new Paragraph({
+                text: "紀錄者",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
             verticalAlign: VerticalAlign.CENTER,
             width: { size: 18, type: WidthType.PERCENTAGE },
           }),
@@ -429,19 +511,21 @@ export const useExport = () => {
     // 按月份分組記錄（只顯示12個月）
     const monthlyRecords = new Map();
     allRecords.forEach((record: any) => {
-      const recordDate = record.measuredAt instanceof Date 
-        ? record.measuredAt 
-        : record.measuredAt.toDate?.() || new Date(record.measuredAt);
+      const recordDate =
+        record.measuredAt instanceof Date
+          ? record.measuredAt
+          : record.measuredAt.toDate?.() || new Date(record.measuredAt);
       const month = recordDate.getMonth() + 1; // 1-12
-      
+
       // 如果該月份還沒有記錄，或者這筆記錄更新，則更新
       if (!monthlyRecords.has(month)) {
         monthlyRecords.set(month, record);
       } else {
         const existing = monthlyRecords.get(month);
-        const existingDate = existing.measuredAt instanceof Date 
-          ? existing.measuredAt 
-          : existing.measuredAt.toDate?.() || new Date(existing.measuredAt);
+        const existingDate =
+          existing.measuredAt instanceof Date
+            ? existing.measuredAt
+            : existing.measuredAt.toDate?.() || new Date(existing.measuredAt);
         if (recordDate > existingDate) {
           monthlyRecords.set(month, record);
         }
@@ -451,57 +535,72 @@ export const useExport = () => {
     // 按月份順序添加記錄
     for (let month = 1; month <= 12; month++) {
       const record = monthlyRecords.get(month);
-      
+
       detailTableRows.push(
         new TableRow({
           height: { value: 550, rule: "atLeast" },
           children: [
             new TableCell({
-              children: [new Paragraph({ 
-                text: `${month}月`,
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              })],
+              children: [
+                new Paragraph({
+                  text: `${month}月`,
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 80 },
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: record?.weight ? `${record.weight}` : "—",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              })],
+              children: [
+                new Paragraph({
+                  text: record?.weight ? `${record.weight}` : "—",
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 80 },
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: (record?.systolic && record?.diastolic) ? `${record.systolic}/${record.diastolic}` : "—",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              })],
+              children: [
+                new Paragraph({
+                  text:
+                    record?.systolic && record?.diastolic
+                      ? `${record.systolic}/${record.diastolic}`
+                      : "—",
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 80 },
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: record?.pulse ? `${record.pulse}` : "—",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              })],
+              children: [
+                new Paragraph({
+                  text: record?.pulse ? `${record.pulse}` : "—",
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 80 },
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: record?.bloodOxygen ? `${record.bloodOxygen}` : "—",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              })],
+              children: [
+                new Paragraph({
+                  text: record?.bloodOxygen ? `${record.bloodOxygen}` : "—",
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 80 },
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
             new TableCell({
-              children: [new Paragraph({ 
-                text: record?.recordedByName || "",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              })],
+              children: [
+                new Paragraph({
+                  text: record?.recordedByName || "",
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 80, line: 276 },
+                }),
+              ],
               verticalAlign: VerticalAlign.CENTER,
             }),
           ],
@@ -520,7 +619,11 @@ export const useExport = () => {
         bottom: { style: BorderStyle.SINGLE, size: 2, color: "000000" },
         left: { style: BorderStyle.SINGLE, size: 2, color: "000000" },
         right: { style: BorderStyle.SINGLE, size: 2, color: "000000" },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+        insideHorizontal: {
+          style: BorderStyle.SINGLE,
+          size: 1,
+          color: "CCCCCC",
+        },
         insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
       },
     });
@@ -544,36 +647,40 @@ export const useExport = () => {
           },
           children: [
             // 機構名稱 - 使用圖片或文字
-            ...(logoNameImage ? [
-              new Paragraph({
-                children: [
-                  new ImageRun({
-                    type: 'png',
-                    data: logoNameImage,
-                    transformation: {
-                      width: 300,
-                      height: 80
-                    }
-                  })
-                ],
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 300 }
-              })
-            ] : [
-              new Paragraph({
-                text: "財團法人桃園市私立",
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 100 }
-              }),
-              new Paragraph({
-                text: "寶貝潛能發展中心",
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 300 }
-              })
-            ]),
+            ...(logoNameImage
+              ? [
+                  new Paragraph({
+                    children: [
+                      new ImageRun({
+                        type: "png",
+                        data: logoNameImage,
+                        transformation: {
+                          width: 300,
+                          height: 80,
+                        },
+                      }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 300 },
+                  }),
+                ]
+              : [
+                  new Paragraph({
+                    text: "財團法人桃園市私立",
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    text: "寶貝潛能發展中心",
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 300 },
+                  }),
+                ]),
             // 輸出時間、姓名和性別
             new Paragraph({
-              text: `輸出時間：${currentDateTime}　　姓名：${clientName}　　性別：${gender === "male" ? "男" : "女"}`,
+              text: `輸出時間：${currentDateTime}　　姓名：${clientName}　　性別：${
+                gender === "male" ? "男" : "女"
+              }`,
               alignment: AlignmentType.LEFT,
               spacing: {
                 after: 400,
@@ -603,7 +710,7 @@ export const useExport = () => {
     // 產生並下載檔案
     const blob = await Packer.toBlob(doc);
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `生命徵象紀錄表_${clientName}_${year}年.docx`;
     link.click();
