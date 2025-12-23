@@ -12,5 +12,5 @@ export default {
     extend: {}
   },
   plugins: [],
-  important: false,
+  important: true,
 }
