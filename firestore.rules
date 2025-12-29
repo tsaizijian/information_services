@@ -42,12 +42,12 @@ service cloud.firestore {
     match /users/{userId} {
       // 所有登入者可讀取使用者列表（用於顯示名稱）
       allow read: if isAuthenticated();
-      
+
       // 建立使用者的規則（管理員或新用戶註冊）
-      // 新用戶註冊時：必須是本人且角色設為 family
-      allow create: if (request.auth != null && 
+      // 新用戶註冊時：必須是本人且角色設為 caregiver
+      allow create: if (request.auth != null &&
                         request.auth.uid == userId &&
-                        request.resource.data.role == 'family') || 
+                        request.resource.data.role == 'caregiver') ||
                        (isAdmin());
       
       // 更新使用者的規則
