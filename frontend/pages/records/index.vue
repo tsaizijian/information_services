@@ -576,7 +576,7 @@
       v-model:visible="showExportDialog"
       header="匯出 Word 文件"
       :modal="true"
-      :style="{ width: '600px' }"
+      :style="{ width: '700px', maxWidth: '90vw' }"
       :draggable="false"
     >
       <template #header>
@@ -594,54 +594,103 @@
       </template>
 
       <div class="space-y-4 py-4">
-        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-          <Checkbox v-model="exportAllClients" inputId="exportAll" binary />
-          <label
-            for="exportAll"
-            class="text-sm font-medium text-gray-700 cursor-pointer"
-          >
-            匯出全部個案 ({{ availableClientsForExport.length }} 位)
-          </label>
+        <!-- 個案選擇 -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <i class="pi pi-user"></i>
+            <span>選擇個案</span>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <Checkbox v-model="exportAllClients" inputId="exportAll" binary />
+            <label
+              for="exportAll"
+              class="text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              匯出全部個案 ({{ availableClientsForExport.length }} 位)
+            </label>
+          </div>
+
+          <div v-if="!exportAllClients" class="space-y-2">
+            <div class="max-h-48 overflow-y-auto space-y-2 p-3 border rounded-lg">
+              <div
+                v-for="client in availableClientsForExport"
+                :key="client.value"
+                class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
+              >
+                <Checkbox
+                  v-model="exportSelectedClients"
+                  :inputId="client.value"
+                  :value="client.value"
+                />
+                <label
+                  :for="client.value"
+                  class="text-sm text-gray-700 cursor-pointer flex-1"
+                >
+                  {{ client.label }}
+                  <span class="text-gray-500 text-xs ml-2">
+                    ({{ getClientRecordCount(client.value) }} 筆紀錄)
+                  </span>
+                </label>
+              </div>
+            </div>
+            <small
+              v-if="!exportAllClients && exportSelectedClients.length === 0"
+              class="text-orange-500 block mt-2"
+            >
+              <i class="pi pi-info-circle mr-1"></i>請至少選擇一位個案
+            </small>
+          </div>
         </div>
 
-        <div v-if="!exportAllClients" class="space-y-2">
-          <label class="text-sm font-medium text-gray-700 block mb-2">
-            選擇個案：
-          </label>
-          <div class="max-h-64 overflow-y-auto space-y-2 p-3 border rounded-lg">
-            <div
-              v-for="client in availableClientsForExport"
-              :key="client.value"
-              class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
-            >
-              <Checkbox
-                v-model="exportSelectedClients"
-                :inputId="client.value"
-                :value="client.value"
+        <!-- 篩選條件 -->
+        <div class="space-y-3 pt-3 border-t">
+          <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <i class="pi pi-filter"></i>
+            <span>篩選記錄</span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="text-xs text-gray-600 mb-1 block">記錄類型</label>
+              <Select
+                v-model="exportFilterType"
+                :options="typeOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="全部類型"
+                class="w-full"
+                showClear
               />
-              <label
-                :for="client.value"
-                class="text-sm text-gray-700 cursor-pointer flex-1"
-              >
-                {{ client.label }}
-                <span class="text-gray-500 text-xs ml-2">
-                  ({{ getClientRecordCount(client.value) }} 筆紀錄)
-                </span>
-              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs text-gray-600 mb-1 block">開始日期</label>
+                <DatePicker
+                  v-model="exportStartDate"
+                  placeholder="選擇日期"
+                  dateFormat="yy/mm/dd"
+                  class="w-full"
+                  showIcon
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-600 mb-1 block">結束日期</label>
+                <DatePicker
+                  v-model="exportEndDate"
+                  placeholder="選擇日期"
+                  dateFormat="yy/mm/dd"
+                  class="w-full"
+                  showIcon
+                />
+              </div>
             </div>
           </div>
-          <small
-            v-if="!exportAllClients && exportSelectedClients.length === 0"
-            class="text-orange-500 block mt-2"
-          >
-            <i class="pi pi-info-circle mr-1"></i>請至少選擇一位個案
-          </small>
         </div>
 
         <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
           <p class="text-sm text-gray-700">
             <i class="pi pi-info-circle mr-2"></i>
-            匯出的文件將包含選定個案的所有紀錄，每位個案獨立一頁
+            將根據上方篩選條件匯出符合的記錄，每位個案獨立一頁
           </p>
         </div>
       </div>
@@ -711,6 +760,9 @@ const showViewDialog = ref(false);
 const showExportDialog = ref(false);
 const exportSelectedClients = ref<string[]>([]);
 const exportAllClients = ref(true);
+const exportFilterType = ref(null); // 匯出時的類型篩選
+const exportStartDate = ref(null); // 匯出時的開始日期
+const exportEndDate = ref(null); // 匯出時的結束日期
 const editingRecord = ref<any>(null);
 const deletingRecord = ref<any>(null);
 const viewingRecord = ref<any>(null);
@@ -1028,6 +1080,9 @@ watch(
 const openExportDialog = () => {
   exportAllClients.value = true;
   exportSelectedClients.value = [];
+  exportFilterType.value = null;
+  exportStartDate.value = null;
+  exportEndDate.value = null;
   showExportDialog.value = true;
 };
 
@@ -1087,17 +1142,42 @@ const exportToWord = async (selectedClientIds: string[]) => {
       console.warn("無法載入機構名稱圖片:", error);
     }
 
-    // 按個案分組照護紀錄（僅包含選定的個案）
-    const recordsByClient = filteredRecords.value
-      .filter((record) => selectedClientIds.includes(record.clientId))
-      .reduce((acc: any, record: any) => {
-        const clientName = record.clientName || "未指定個案";
-        if (!acc[clientName]) {
-          acc[clientName] = [];
-        }
-        acc[clientName].push(record);
-        return acc;
-      }, {});
+    // 按個案分組照護紀錄（僅包含選定的個案，並套用篩選條件）
+    let recordsToExport = filteredRecords.value.filter((record) =>
+      selectedClientIds.includes(record.clientId)
+    );
+
+    // 套用類型篩選
+    if (exportFilterType.value) {
+      recordsToExport = recordsToExport.filter(
+        (record) => record.recordType === exportFilterType.value
+      );
+    }
+
+    // 套用開始日期篩選
+    if (exportStartDate.value) {
+      recordsToExport = recordsToExport.filter(
+        (record) =>
+          new Date(record.recordDate) >= new Date(exportStartDate.value as any)
+      );
+    }
+
+    // 套用結束日期篩選
+    if (exportEndDate.value) {
+      recordsToExport = recordsToExport.filter(
+        (record) =>
+          new Date(record.recordDate) <= new Date(exportEndDate.value as any)
+      );
+    }
+
+    const recordsByClient = recordsToExport.reduce((acc: any, record: any) => {
+      const clientName = record.clientName || "未指定個案";
+      if (!acc[clientName]) {
+        acc[clientName] = [];
+      }
+      acc[clientName].push(record);
+      return acc;
+    }, {});
 
     const sections: any[] = [];
 
