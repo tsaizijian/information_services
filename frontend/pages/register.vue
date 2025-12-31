@@ -241,7 +241,7 @@
                     </div>
                   </div>
 
-                  <!-- 角色說明 -->
+                  <!-- 註冊流程說明 -->
                   <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <div class="flex items-start gap-3">
                       <div
@@ -250,12 +250,17 @@
                         <i class="pi pi-info-circle text-white"></i>
                       </div>
                       <div class="flex-1">
-                        <h4 class="text-sm font-bold text-blue-900 mb-1">
-                          關於帳號角色
+                        <h4 class="text-sm font-bold text-blue-900 mb-2">
+                          註冊流程說明
                         </h4>
-                        <p class="text-xs text-blue-800">
-                          註冊後您的帳號角色將預設為「照顧者」，
-                          如需管理員權限，請聯絡現有系統管理員進行設定。
+                        <ol class="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                          <li>填寫註冊資料並送出</li>
+                          <li>至您的信箱完成郵件驗證</li>
+                          <li>等待管理員審核並批准您的帳號</li>
+                          <li>收到批准通知後即可登入使用</li>
+                        </ol>
+                        <p class="text-xs text-blue-700 mt-2">
+                          💡 註冊後您的帳號角色將預設為「照顧者」
                         </p>
                       </div>
                     </div>
@@ -486,7 +491,7 @@ const handleRegister = async () => {
       toast.add({
         severity: "success",
         summary: "註冊成功",
-        detail: "驗證郵件已發送至您的信箱（請檢查垃圾郵件資料夾），請先完成郵箱驗證後再登入。",
+        detail: "驗證郵件已發送至您的信箱（請檢查垃圾郵件資料夾）。完成郵箱驗證後，請等待管理員批准您的帳號。",
         life: 6000,
       });
 

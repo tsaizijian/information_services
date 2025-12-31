@@ -69,7 +69,7 @@ export const useAuth = () => {
       // 發送驗證郵件
       await sendEmailVerification(userCredential.user);
 
-      // 建立 Firestore 使用者資料（預設角色為 caregiver）
+      // 建立 Firestore 使用者資料（預設角色為 caregiver，需管理員批准）
       const userDoc = {
         email: userData.email,
         displayName: userData.displayName,
@@ -77,7 +77,7 @@ export const useAuth = () => {
         role: "caregiver", // 註冊時統一設定為照顧者，如需管理員權限請聯絡現有管理員調整
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        isActive: true,
+        isActive: false, // 新註冊用戶預設為停用，需要管理員批准後才能使用
       };
 
       console.log("Creating Firestore user document:", {
@@ -145,25 +145,43 @@ export const useAuth = () => {
         };
       }
 
-      user.value = userCredential.user;
-
       // 取得使用者資料
       const userDoc = await getDoc(
         doc(firestore, "users", userCredential.user.uid)
       );
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        userProfile.value = {
-          id: userDoc.id,
-          email: data.email,
-          displayName: data.displayName,
-          phone: data.phone,
-          role: data.role as "admin" | "caregiver",
-          isActive: data.isActive,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
+
+      if (!userDoc.exists()) {
+        await signOut(auth);
+        return {
+          success: false,
+          error: "找不到使用者資料",
+          code: "auth/user-not-found",
         };
       }
+
+      const data = userDoc.data();
+
+      // 檢查帳號是否已被管理員批准
+      if (!data.isActive) {
+        await signOut(auth);
+        return {
+          success: false,
+          error: "您的帳號尚未經管理員批准，請等候管理員審核",
+          code: "auth/account-not-approved",
+        };
+      }
+
+      user.value = userCredential.user;
+      userProfile.value = {
+        id: userDoc.id,
+        email: data.email,
+        displayName: data.displayName,
+        phone: data.phone,
+        role: data.role as "admin" | "caregiver",
+        isActive: data.isActive,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
 
       return { success: true, user: userCredential.user };
     } catch (error: any) {
