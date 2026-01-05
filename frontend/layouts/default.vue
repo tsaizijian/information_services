@@ -145,6 +145,11 @@ const adminMenuItems = [
     icon: "pi pi-user-edit",
     to: "/users",
   },
+  {
+    label: "生命徵象設定",
+    icon: "pi pi-cog",
+    to: "/admin/vital-signs-config",
+  },
 ];
 
 const menuItems = computed(() => {

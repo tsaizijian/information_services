@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -84,6 +85,34 @@ export const useFirestore = () => {
     }
   };
 
+  // 設定文件（建立或覆寫指定 ID 的文件）
+  const setDocument = async (
+    collectionName: string,
+    docId: string,
+    data: any,
+    merge: boolean = true
+  ) => {
+    try {
+      const { $firestore } = useNuxtApp();
+      if (!$firestore) {
+        throw new Error("Firestore not initialized");
+      }
+      const docRef = doc($firestore, collectionName, docId);
+      await setDoc(
+        docRef,
+        {
+          ...data,
+          updatedAt: Timestamp.now(),
+        },
+        { merge }
+      );
+      return { id: docId, ...data };
+    } catch (error) {
+      console.error(`Error setting document in ${collectionName}:`, error);
+      throw error;
+    }
+  };
+
   // 更新文件
   const updateDocument = async (
     collectionName: string,
@@ -150,6 +179,7 @@ export const useFirestore = () => {
     getDocument,
     getCollection,
     addDocument,
+    setDocument,
     updateDocument,
     deleteDocument,
     queryDocuments,

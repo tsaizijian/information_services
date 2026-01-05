@@ -32,6 +32,7 @@ interface VitalSignRecord {
   temperature?: number | null;
   bloodOxygen?: number | null;
   bloodSugar?: number | null;
+  height?: number | null;
   measuredAt?: any;
   measuredBy?: string;
   recordedByName?: string;
@@ -244,6 +245,7 @@ export const useVitalSigns = () => {
       temperature?: number | null;
       bloodOxygen?: number | null;
       bloodSugar?: number | null;
+      height?: number | null;
       notes?: string;
     },
     recordedBy?: { id?: string; name?: string }
@@ -259,6 +261,7 @@ export const useVitalSigns = () => {
       temperature: record.temperature ?? null,
       bloodOxygen: record.bloodOxygen ?? null,
       bloodSugar: record.bloodSugar ?? null,
+      height: record.height ?? null,
       notes: record.notes ?? null,
       recordedBy: recordedBy?.id || userProfile.value?.id || null,
       recordedByName:
@@ -286,6 +289,7 @@ export const useVitalSigns = () => {
       temperature?: number | null;
       bloodOxygen?: number | null;
       bloodSugar?: number | null;
+      height?: number | null;
       notes?: string;
     }
   ) => {
@@ -314,6 +318,9 @@ export const useVitalSigns = () => {
     }
     if (record.bloodSugar !== undefined) {
       data.bloodSugar = record.bloodSugar;
+    }
+    if (record.height !== undefined) {
+      data.height = record.height;
     }
     if (record.notes !== undefined) {
       data.notes = record.notes;

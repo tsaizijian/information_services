@@ -217,6 +217,7 @@
           sortField="measuredAt"
           :sortOrder="-1"
         >
+          <!-- 固定欄位：日期 -->
           <Column
             field="measuredAt"
             header="日期"
@@ -232,35 +233,30 @@
               </div>
             </template>
           </Column>
-          <Column field="weight" header="體重 (kg)" style="min-width: 110px">
-            <template #body="{ data }">
-              <div class="text-gray-700">
-                {{ formatValue(data.weight, " kg", 1) }}
-              </div>
-            </template>
-          </Column>
+
+          <!-- 動態欄位：依設定顯示 -->
           <Column
-            field="bloodPressure"
-            header="血壓 (mmHg)"
-            style="min-width: 140px"
+            v-for="field in enabledVitalSignFields"
+            :key="field.key"
+            :field="field.key"
+            :header="`${field.label} (${field.unit})`"
+            style="min-width: 110px"
           >
             <template #body="{ data }">
-              <div :class="getCellClass(data, 'bloodPressure')">
-                {{ formatBloodPressure(data) }}
-              </div>
-            </template>
-          </Column>
-          <Column field="pulse" header="脈搏 (次/分)" style="min-width: 120px">
-            <template #body="{ data }">
-              <div :class="getCellClass(data, 'pulse')">
-                {{ formatValue(data.pulse, " 次/分") }}
-              </div>
-            </template>
-          </Column>
-          <Column field="bloodOxygen" header="血氧 (%)" style="min-width: 90px">
-            <template #body="{ data }">
-              <div :class="getCellClass(data, 'bloodOxygen')">
-                {{ formatValue(data.bloodOxygen, " %") }}
+              <div
+                :class="{
+                  'text-gray-700': true,
+                  'font-semibold text-red-600':
+                    isValueAbnormal(field.key, data[field.key]),
+                }"
+              >
+                {{
+                  data[field.key]
+                    ? `${Number(data[field.key]).toFixed(
+                        field.step && field.step < 1 ? -Math.floor(Math.log10(field.step)) : 0
+                      )} ${field.unit}`
+                    : "-"
+                }}
               </div>
             </template>
           </Column>
@@ -407,123 +403,64 @@
           </div>
         </div>
 
-        <!-- 體重 -->
-        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+        <!-- 動態渲染所有已啟用的欄位 -->
+        <div
+          v-for="field in enabledVitalSignFields"
+          :key="field.key"
+          class="bg-gray-50 rounded-xl p-4 border border-gray-100"
+        >
+          <!-- 欄位標題 -->
           <div class="flex items-center gap-2 mb-4">
             <div
-              class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"
+              class="w-8 h-8 rounded-lg flex items-center justify-center"
+              :class="getColorClass(field.color)"
             >
-              <i class="pi pi-chart-bar text-purple-600"></i>
+              <i :class="`pi ${field.icon} ${getTextColorClass(field.color)}`"></i>
             </div>
             <div>
-              <p class="text-sm font-bold text-gray-800">體重測量</p>
-              <p class="text-xs text-gray-500">記錄個案的體重數據</p>
+              <p class="text-sm font-bold text-gray-800">{{ field.label }}測量</p>
+              <p class="text-xs text-gray-500">記錄{{ field.label}}數據</p>
             </div>
           </div>
+
+          <!-- 輸入欄位 -->
           <div class="space-y-2">
             <label
               class="text-xs font-medium text-gray-600 flex items-center gap-1"
             >
-              <i class="pi pi-percentage text-gray-400"></i>
-              體重 (kg)
+              <i :class="`pi ${field.icon} text-gray-400`"></i>
+              {{ field.label }} ({{ field.unit }})
+              <span v-if="field.required" class="text-red-500">*</span>
             </label>
             <InputText
-              v-model="form.weight"
-              type="number"
-              step="0.1"
-              placeholder="例如：65.5"
-              class="w-full"
+              v-model="form[field.key]"
+              :type="field.inputType"
+              :step="field.step || 1"
+              :placeholder="`輸入${field.label}`"
+              :class="{
+                'w-full': true,
+                'border-red-500':
+                  formErrors[field.key] ||
+                  isValueAbnormal(field.key, form[field.key]),
+              }"
             />
-          </div>
-        </div>
 
-        <!-- 血壓測量 -->
-        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <div class="flex items-center gap-2 mb-4">
-            <div
-              class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"
+            <!-- 異常值警告 -->
+            <small
+              v-if="
+                !formErrors[field.key] &&
+                isValueAbnormal(field.key, form[field.key])
+              "
+              class="text-orange-600 flex items-center gap-1"
             >
-              <i class="pi pi-arrow-right-arrow-left text-blue-600"></i>
-            </div>
-            <div>
-              <p class="text-sm font-bold text-gray-800">血壓測量</p>
-              <p class="text-xs text-gray-500">收縮壓與舒張壓數值</p>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <label
-                class="text-xs font-medium text-gray-600 flex items-center gap-1"
-              >
-                <i class="pi pi-angle-up text-gray-400"></i>
-                收縮壓 (mmHg)
-              </label>
-              <InputText
-                v-model="form.systolic"
-                type="number"
-                placeholder="例如：120"
-                class="w-full"
-              />
-            </div>
-            <div class="space-y-2">
-              <label
-                class="text-xs font-medium text-gray-600 flex items-center gap-1"
-              >
-                <i class="pi pi-angle-down text-gray-400"></i>
-                舒張壓 (mmHg)
-              </label>
-              <InputText
-                v-model="form.diastolic"
-                type="number"
-                placeholder="例如：80"
-                class="w-full"
-              />
-            </div>
-          </div>
-        </div>
+              <i class="pi pi-exclamation-triangle"></i>
+              數值異常（正常範圍：{{ field.thresholdMin }}-{{ field.thresholdMax }} {{ field.unit }}）
+            </small>
 
-        <!-- 脈搏與血氧 -->
-        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <div class="flex items-center gap-2 mb-4">
-            <div
-              class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center"
-            >
-              <i class="pi pi-heart text-red-600"></i>
-            </div>
-            <div>
-              <p class="text-sm font-bold text-gray-800">脈搏與血氧</p>
-              <p class="text-xs text-gray-500">心跳與氧氣飽和度</p>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <label
-                class="text-xs font-medium text-gray-600 flex items-center gap-1"
-              >
-                <i class="pi pi-heart text-gray-400"></i>
-                脈搏 (次/分)
-              </label>
-              <InputText
-                v-model="form.pulse"
-                type="number"
-                placeholder="例如：72"
-                class="w-full"
-              />
-            </div>
-            <div class="space-y-2">
-              <label
-                class="text-xs font-medium text-gray-600 flex items-center gap-1"
-              >
-                <i class="pi pi-percentage text-gray-400"></i>
-                血氧 (%)
-              </label>
-              <InputText
-                v-model="form.bloodOxygen"
-                type="number"
-                placeholder="例如：98"
-                class="w-full"
-              />
-            </div>
+            <!-- 驗證錯誤訊息 -->
+            <small v-if="formErrors[field.key]" class="text-red-500">
+              {{ formErrors[field.key] }}
+            </small>
           </div>
         </div>
 
@@ -852,8 +789,19 @@ const {
   createVitalSignRecord,
   updateVitalSignRecord,
   removeVitalSignRecord,
+  savePhysicalRecord,
 } = useVitalSigns();
 const { exportVitalSignsToWord } = useExport();
+const {
+  config: vitalSignConfig,
+  loading: configLoading,
+  fetchConfig,
+  isFieldEnabled,
+  getFieldConfig,
+  enabledVitalSignFields,
+  getFieldValidation,
+  isValueAbnormal,
+} = useVitalSignConfig();
 
 const selectedClientId = ref<string | null>(null);
 const selectedRange = ref("30");
@@ -866,14 +814,18 @@ const editingRecord = ref<any>(null);
 
 const showDialog = ref(false);
 const saving = ref(false);
-const form = reactive({
+const form: Record<string, any> = reactive({
   clientId: "",
   measuredAt: new Date(),
+  // 動態支援所有可能的生命徵象欄位
   weight: null as string | null,
   systolic: null as string | null,
   diastolic: null as string | null,
   pulse: null as string | null,
   bloodOxygen: null as string | null,
+  temperature: null as string | null,
+  bloodSugar: null as string | null,
+  height: null as string | null,
 });
 const formErrors = reactive<Record<string, string>>({});
 
@@ -961,57 +913,38 @@ const chartData = computed(() => {
     dayjs(record.measuredAt).format("MM/DD HH:mm")
   );
 
+  // 顏色映射
+  const colorMap: Record<string, { border: string; bg: string }> = {
+    weight: { border: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)" },
+    systolic: { border: "#2563eb", bg: "rgba(37, 99, 235, 0.15)" },
+    diastolic: { border: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
+    pulse: { border: "#16a34a", bg: "rgba(22, 163, 74, 0.1)" },
+    bloodOxygen: { border: "#f97316", bg: "rgba(249, 115, 22, 0.1)" },
+    temperature: { border: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
+    bloodSugar: { border: "#06b6d4", bg: "rgba(6, 182, 212, 0.1)" },
+  };
+
+  // 動態產生 datasets
+  const datasets = enabledVitalSignFields.value.map((field) => {
+    const colors = colorMap[field.key] || {
+      border: "#6b7280",
+      bg: "rgba(107, 114, 128, 0.1)",
+    };
+
+    return {
+      label: `${field.label} (${field.unit})`,
+      data: sortedRecordsAsc.value.map((record) => record[field.key] ?? null),
+      borderColor: colors.border,
+      backgroundColor: colors.bg,
+      tension: 0.4,
+      fill: true,
+      spanGaps: true,
+    };
+  });
+
   return {
     labels,
-    datasets: [
-      {
-        label: "體重 (kg)",
-        data: sortedRecordsAsc.value.map((record) => record.weight ?? null),
-        borderColor: "#ffff00",
-        backgroundColor: "rgba(139, 92, 246, 0.1)",
-        tension: 0.4,
-        fill: true,
-        spanGaps: true,
-      },
-      {
-        label: "收縮壓 (mmHg)",
-        data: sortedRecordsAsc.value.map((record) => record.systolic ?? null),
-        borderColor: "#2563eb",
-        backgroundColor: "rgba(37, 99, 235, 0.15)",
-        tension: 0.4,
-        fill: true,
-        spanGaps: true,
-      },
-      {
-        label: "舒張壓 (mmHg)",
-        data: sortedRecordsAsc.value.map((record) => record.diastolic ?? null),
-        borderColor: "#10b981",
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
-        tension: 0.4,
-        fill: true,
-        spanGaps: true,
-      },
-      {
-        label: "脈搏 (次/分)",
-        data: sortedRecordsAsc.value.map((record) => record.pulse ?? null),
-        borderColor: "#16a34a",
-        backgroundColor: "rgba(22, 163, 74, 0.1)",
-        tension: 0.4,
-        fill: true,
-        spanGaps: true,
-      },
-      {
-        label: "血氧 (%)",
-        data: sortedRecordsAsc.value.map(
-          (record) => record.bloodOxygen ?? null
-        ),
-        borderColor: "#f97316",
-        backgroundColor: "rgba(249, 115, 22, 0.1)",
-        tension: 0.4,
-        fill: true,
-        spanGaps: true,
-      },
-    ],
+    datasets,
   };
 });
 
@@ -1185,6 +1118,9 @@ const openCreateDialog = () => {
     diastolic: null,
     pulse: null,
     bloodOxygen: null,
+    temperature: null,
+    bloodSugar: null,
+    height: null,
   });
   Object.keys(formErrors).forEach((key) => (formErrors[key] = ""));
   showDialog.value = true;
@@ -1200,6 +1136,9 @@ const openEditDialog = (record: any) => {
     diastolic: record.diastolic ? String(record.diastolic) : null,
     pulse: record.pulse ? String(record.pulse) : null,
     bloodOxygen: record.bloodOxygen ? String(record.bloodOxygen) : null,
+    temperature: record.temperature ? String(record.temperature) : null,
+    bloodSugar: record.bloodSugar ? String(record.bloodSugar) : null,
+    height: record.height ? String(record.height) : null,
   });
   Object.keys(formErrors).forEach((key) => (formErrors[key] = ""));
   showDialog.value = true;
@@ -1330,15 +1269,42 @@ const validateForm = () => {
     formErrors.measuredAt = "請選擇測量時間";
   }
 
-  const hasMeasurement =
-    form.weight ||
-    form.systolic ||
-    form.diastolic ||
-    form.pulse ||
-    form.bloodOxygen;
+  // 動態驗證每個已啟用欄位
+  if (enabledVitalSignFields.value) {
+    enabledVitalSignFields.value.forEach((field) => {
+      const value = form[field.key];
 
-  if (!hasMeasurement) {
-    formErrors.measurement = "至少填寫一項測量數據";
+      // 必填欄位檢查
+      if (
+        field.required &&
+        (value === null || value === undefined || value === "")
+      ) {
+        formErrors[field.key] = `${field.label}為必填欄位`;
+        return;
+      }
+
+      // 如果有值，進行範圍驗證
+      if (value !== null && value !== undefined && value !== "") {
+        const numValue = Number(value);
+
+        if (field.min !== null && numValue < field.min) {
+          formErrors[field.key] = `${field.label}不得小於 ${field.min} ${field.unit}`;
+        }
+        if (field.max !== null && numValue > field.max) {
+          formErrors[field.key] = `${field.label}不得大於 ${field.max} ${field.unit}`;
+        }
+      }
+    });
+  }
+
+  // 檢查至少有一個已啟用欄位有數據
+  const hasEnabledMeasurement = enabledVitalSignFields.value?.some((field) => {
+    const value = form[field.key];
+    return value !== null && value !== undefined && value !== "";
+  });
+
+  if (!hasEnabledMeasurement) {
+    formErrors.measurement = "至少填寫一項已啟用的測量數據";
   }
 
   return Object.values(formErrors).every((error) => !error);
@@ -1351,16 +1317,22 @@ const submitForm = async () => {
   try {
     const client = clients.value.find((item: any) => item.id === form.clientId);
 
+    // 動態建立資料物件，包含所有可能的欄位
+    const recordData: Record<string, any> = {
+      measuredAt: form.measuredAt,
+    };
+
+    // 所有可能的生命徵象欄位
+    const allFieldKeys = ['weight', 'systolic', 'diastolic', 'pulse', 'bloodOxygen', 'temperature', 'bloodSugar', 'height'];
+
+    // 動態添加所有欄位的值
+    allFieldKeys.forEach(key => {
+      recordData[key] = form[key] ? Number(form[key]) : null;
+    });
+
     if (editingRecord.value) {
       // 更新記錄
-      await updateVitalSignRecord(editingRecord.value.id, {
-        measuredAt: form.measuredAt,
-        weight: form.weight ? Number(form.weight) : null,
-        systolic: form.systolic ? Number(form.systolic) : null,
-        diastolic: form.diastolic ? Number(form.diastolic) : null,
-        pulse: form.pulse ? Number(form.pulse) : null,
-        bloodOxygen: form.bloodOxygen ? Number(form.bloodOxygen) : null,
-      });
+      await updateVitalSignRecord(editingRecord.value.id, recordData);
 
       toast.add({
         severity: "success",
@@ -1373,12 +1345,15 @@ const submitForm = async () => {
       await createVitalSignRecord({
         clientId: form.clientId,
         clientName: client?.name || "",
-        measuredAt: form.measuredAt,
-        weight: form.weight ? Number(form.weight) : null,
-        systolic: form.systolic ? Number(form.systolic) : null,
-        diastolic: form.diastolic ? Number(form.diastolic) : null,
-        pulse: form.pulse ? Number(form.pulse) : null,
-        bloodOxygen: form.bloodOxygen ? Number(form.bloodOxygen) : null,
+        measuredAt: recordData.measuredAt,
+        weight: recordData.weight,
+        systolic: recordData.systolic,
+        diastolic: recordData.diastolic,
+        pulse: recordData.pulse,
+        bloodOxygen: recordData.bloodOxygen,
+        temperature: recordData.temperature,
+        bloodSugar: recordData.bloodSugar,
+        height: recordData.height,
       });
 
       toast.add({
@@ -1444,6 +1419,7 @@ const exportWord = async () => {
       client.name,
       currentYear,
       client.gender,
+      enabledVitalSignFields.value, // 傳入已啟用的欄位設定
       client.normalBloodPressure
     );
 
@@ -1464,6 +1440,31 @@ const exportWord = async () => {
   }
 };
 
+// 取得欄位的主題色對應
+const getColorClass = (color: string) => {
+  const colorMap: Record<string, string> = {
+    purple: "bg-purple-100",
+    blue: "bg-blue-100",
+    red: "bg-red-100",
+    orange: "bg-orange-100",
+    green: "bg-green-100",
+    indigo: "bg-indigo-100",
+  };
+  return colorMap[color] || "bg-gray-100";
+};
+
+const getTextColorClass = (color: string) => {
+  const colorMap: Record<string, string> = {
+    purple: "text-purple-600",
+    blue: "text-blue-600",
+    red: "text-red-600",
+    orange: "text-orange-600",
+    green: "text-green-600",
+    indigo: "text-indigo-600",
+  };
+  return colorMap[color] || "text-gray-600";
+};
+
 watch(
   filters,
   () => {
@@ -1480,6 +1481,7 @@ watch(selectedRange, (value) => {
 });
 
 onMounted(async () => {
+  await fetchConfig();
   await fetchClients();
   if (!selectedClientId.value && clients.value.length > 0) {
     selectedClientId.value = clients.value[0].id;

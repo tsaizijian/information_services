@@ -180,6 +180,7 @@ export const useExport = () => {
     clientName: string,
     year: number,
     gender: string,
+    enabledFields: any[], // 已啟用的欄位配置
     normalBP?: {
       systolicMin: number;
       systolicMax: number;
@@ -262,14 +263,14 @@ export const useExport = () => {
           bloodPressure = `${avgSystolic}/${avgDiastolic}`;
         }
 
-        // 計算心率平均值 (脈搏)
-        const heartRates = monthRecords
-          .map((r: any) => r.heartRate)
-          .filter((h: any) => h !== null && h !== undefined);
-        if (heartRates.length > 0) {
+        // 計算脈搏平均值
+        const pulses = monthRecords
+          .map((r: any) => r.pulse)
+          .filter((p: any) => p !== null && p !== undefined);
+        if (pulses.length > 0) {
           pulse = Math.round(
-            heartRates.reduce((a: number, b: number) => a + b, 0) /
-              heartRates.length
+            pulses.reduce((a: number, b: number) => a + b, 0) /
+              pulses.length
           );
         }
 
@@ -433,78 +434,80 @@ export const useExport = () => {
     });
 
     // 建立詳細測量記錄表格
-    const detailTableRows = [
-      // 標題行
-      new TableRow({
-        height: { value: 600, rule: "atLeast" },
+    // 計算欄位寬度
+    const monthColumnWidth = 12;
+    const recorderColumnWidth = 18;
+    const fieldColumnWidth = Math.floor((100 - monthColumnWidth - recorderColumnWidth) / enabledFields.length);
+
+    // 動態生成標題行
+    const headerCells = [
+      new TableCell({
         children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: "月份",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              }),
-            ],
-            verticalAlign: VerticalAlign.CENTER,
-            width: { size: 12, type: WidthType.PERCENTAGE },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: "體重(kg)",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              }),
-            ],
-            verticalAlign: VerticalAlign.CENTER,
-            width: { size: 16, type: WidthType.PERCENTAGE },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: "血壓(mmHg)",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              }),
-            ],
-            verticalAlign: VerticalAlign.CENTER,
-            width: { size: 20, type: WidthType.PERCENTAGE },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: "脈搏(次/分)",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              }),
-            ],
-            verticalAlign: VerticalAlign.CENTER,
-            width: { size: 18, type: WidthType.PERCENTAGE },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: "血氧(%)",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              }),
-            ],
-            verticalAlign: VerticalAlign.CENTER,
-            width: { size: 16, type: WidthType.PERCENTAGE },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: "紀錄者",
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 80, after: 80 },
-              }),
-            ],
-            verticalAlign: VerticalAlign.CENTER,
-            width: { size: 18, type: WidthType.PERCENTAGE },
+          new Paragraph({
+            text: "月份",
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 80, after: 80 },
           }),
         ],
+        verticalAlign: VerticalAlign.CENTER,
+        width: { size: monthColumnWidth, type: WidthType.PERCENTAGE },
+      }),
+    ];
+
+    // 根據啟用的欄位添加標題
+    enabledFields.forEach((field: any) => {
+      // 特殊處理：收縮壓和舒張壓合併為血壓欄位
+      if (field.key === 'systolic') {
+        headerCells.push(
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: `血壓(${field.unit})`,
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
+            verticalAlign: VerticalAlign.CENTER,
+            width: { size: fieldColumnWidth, type: WidthType.PERCENTAGE },
+          })
+        );
+      } else if (field.key !== 'diastolic') {
+        // 舒張壓跳過，已經合併到血壓
+        headerCells.push(
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: `${field.label}(${field.unit})`,
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
+            verticalAlign: VerticalAlign.CENTER,
+            width: { size: fieldColumnWidth, type: WidthType.PERCENTAGE },
+          })
+        );
+      }
+    });
+
+    // 添加紀錄者欄位
+    headerCells.push(
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "紀錄者",
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 80, after: 80 },
+          }),
+        ],
+        verticalAlign: VerticalAlign.CENTER,
+        width: { size: recorderColumnWidth, type: WidthType.PERCENTAGE },
+      })
+    );
+
+    const detailTableRows = [
+      new TableRow({
+        height: { value: 600, rule: "atLeast" },
+        children: headerCells,
       }),
     ];
 
@@ -536,74 +539,74 @@ export const useExport = () => {
     for (let month = 1; month <= 12; month++) {
       const record = monthlyRecords.get(month);
 
+      // 動態生成資料儲存格
+      const dataCells = [
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: `${month}月`,
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 80, after: 80 },
+            }),
+          ],
+          verticalAlign: VerticalAlign.CENTER,
+        }),
+      ];
+
+      // 根據啟用的欄位添加資料
+      enabledFields.forEach((field: any) => {
+        let cellText = "—";
+
+        // 特殊處理：收縮壓和舒張壓合併為血壓
+        if (field.key === 'systolic') {
+          if (record?.systolic && record?.diastolic) {
+            cellText = `${record.systolic}/${record.diastolic}`;
+          }
+        } else if (field.key === 'diastolic') {
+          // 舒張壓已經在收縮壓處理了，跳過
+          return;
+        } else {
+          // 一般欄位
+          if (record?.[field.key] !== null && record?.[field.key] !== undefined) {
+            const value = Number(record[field.key]);
+            // 根據 step 決定小數位數
+            const decimals = field.step && field.step < 1 ? -Math.floor(Math.log10(field.step)) : 0;
+            cellText = value.toFixed(decimals);
+          }
+        }
+
+        dataCells.push(
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: cellText,
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 80 },
+              }),
+            ],
+            verticalAlign: VerticalAlign.CENTER,
+          })
+        );
+      });
+
+      // 添加紀錄者欄位
+      dataCells.push(
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: record?.recordedByName || "",
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 80, after: 80, line: 276 },
+            }),
+          ],
+          verticalAlign: VerticalAlign.CENTER,
+        })
+      );
+
       detailTableRows.push(
         new TableRow({
           height: { value: 550, rule: "atLeast" },
-          children: [
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text: `${month}月`,
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 80, after: 80 },
-                }),
-              ],
-              verticalAlign: VerticalAlign.CENTER,
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text: record?.weight ? `${record.weight}` : "—",
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 80, after: 80 },
-                }),
-              ],
-              verticalAlign: VerticalAlign.CENTER,
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text:
-                    record?.systolic && record?.diastolic
-                      ? `${record.systolic}/${record.diastolic}`
-                      : "—",
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 80, after: 80 },
-                }),
-              ],
-              verticalAlign: VerticalAlign.CENTER,
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text: record?.pulse ? `${record.pulse}` : "—",
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 80, after: 80 },
-                }),
-              ],
-              verticalAlign: VerticalAlign.CENTER,
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text: record?.bloodOxygen ? `${record.bloodOxygen}` : "—",
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 80, after: 80 },
-                }),
-              ],
-              verticalAlign: VerticalAlign.CENTER,
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text: record?.recordedByName || "",
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 80, after: 80, line: 276 },
-                }),
-              ],
-              verticalAlign: VerticalAlign.CENTER,
-            }),
-          ],
+          children: dataCells,
         })
       );
     }

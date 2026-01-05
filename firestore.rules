@@ -249,5 +249,17 @@ service cloud.firestore {
       // 只有管理員可以刪除
       allow delete: if isAdmin();
     }
+
+    // 系統設定集合
+    match /systemSettings/{settingId} {
+      // 所有登入者可讀取設定
+      allow read: if isAuthenticated();
+
+      // 僅管理員可新增/更新設定
+      allow create, update: if isAdmin();
+
+      // 僅管理員可刪除（但不應刪除 vitalSignsConfig）
+      allow delete: if isAdmin();
+    }
   }
 }
